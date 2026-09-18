@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Mini App MAX</title>
+  <script src="https://st.max.ru/js/max-web-app.js"></script>
+  <style>
+    * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, sans-serif; }
+    body { margin: 0; padding: 16px; background: #f5f5f5; color: #222; }
+    .card { background: #fff; border-radius: 12px; padding: 16px; margin-bottom: 12px; box-shadow: 0 1px 4px rgba(0,0,0,.08); }
+    h1 { font-size: 20px; margin: 0 0 8px; }
+    .muted { color: #666; font-size: 13px; word-break: break-all; }
+    button { width: 100%; padding: 12px; border: 0; border-radius: 10px; background: #1a6cff; color: #fff; font-size: 15px; margin-top: 8px; cursor: pointer; }
+    button.secondary { background: #e8e8e8; color: #222; }
+    pre { background: #111; color: #0f0; padding: 10px; border-radius: 8px; font-size: 11px; overflow: auto; max-height: 200px; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1 id="greeting">Загрузка...</h1>
+    <div class="muted" id="info"></div>
+  </div>
+
+  <div class="card">
+    <div class="muted">initDataUnsafe:</div>
+    <pre id="dump">{}</pre>
+    <button onclick="requestPhone()">Запросить номер телефона</button>
+    <button class="secondary" onclick="closeApp()">Закрыть</button>
+  </div>
+
+  <script>
+    const wa = window.WebApp;
+    const user = wa.initDataUnsafe?.user;
+    const chat = wa.initDataUnsafe?.chat;
+    const startParam = wa.initDataUnsafe?.start_param;
+
+    document.getElementById('greeting').textContent = user
+      ? `Привет, ${user.first_name} ${user.last_name || ''}!`
+      : 'Привет! Открой через MAX';
+
+    document.getElementById('info').innerHTML = `
+      user_id: ${user?.id || '-'}<br>
+      chat: ${chat?.id || '-'} (${chat?.type || '-'})<br>
+      start_param: ${startParam || '-'}<br>
+      platform: ${wa.platform} ${wa.version}
+    `;
+
+    document.getElementById('dump').textContent = JSON.stringify(wa.initDataUnsafe, null, 2);
+
+    // пример отправки initData на бэкенд для валидации
+    // fetch('https://твой-бэкенд/api/validate', {
+    //   method: 'POST',
+    //   headers: {'Content-Type': 'application/json'},
+    //   body: JSON.stringify({ initData: wa.initData })
+    // });
+
+    function requestPhone() {
+      wa.requestContact().then(r => alert('phone: ' + r.phone)).catch(e => alert(JSON.stringify(e)));
+    }
+
+    function closeApp() {
+      wa.close?.();
+      // fallback
+      window.close();
+    }
+  </script>
+</body>
+</html>
