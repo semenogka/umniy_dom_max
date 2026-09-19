@@ -1,4 +1,4 @@
-g<!doctype html>
+<!doctype html>
 <html lang="ru">
 <head>
   <meta charset="utf-8">
@@ -1837,10 +1837,15 @@ g<!doctype html>
         avatar.setAttribute("aria-label", `Аватар: ${message.author}`);
 
         if (message.author === "Вы") {
-          const image = document.createElement("img");
-          image.src = "image.png";
-          image.alt = "";
-          avatar.append(image);
+          const accountPhoto = document.querySelector(".account-avatar")?.src;
+          if (accountPhoto) {
+            const image = document.createElement("img");
+            image.src = accountPhoto;
+            image.alt = "";
+            avatar.append(image);
+          } else {
+            avatar.textContent = "Я";
+          }
           return avatar;
         }
 
