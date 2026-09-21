@@ -9,3 +9,4 @@ venv/
 frontend/node_modules/
 frontend/dist/
 frontend/*.local
+*.egg-info/
