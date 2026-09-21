@@ -102,16 +102,38 @@ export const Disabled: Story = {
 	},
 };
 
+export const IconOnly: Story = {
+	args: {
+		variant: "icon",
+		"aria-label": "Меню",
+		children: <Icon name="sidebar" size="xl" />,
+	},
+	decorators: [
+		(Story) => (
+			<div style={{ padding: 16 }}>
+				<Story />
+			</div>
+		),
+	],
+};
+
 export const AllVariants: Story = {
 	render: (args) => (
-		<div style={{ display: "grid", gap: 12 }}>
+		<div style={{ display: "grid", gap: 12, justifyItems: "start" }}>
 			{BUTTON_VARIANTS.map((variant) => (
-				<Button key={variant} {...(args as ButtonProps)} variant={variant}>
+				<Button
+					key={variant}
+					{...(args as ButtonProps)}
+					variant={variant}
+					aria-label={variant === "icon" ? "Меню" : undefined}
+				>
 					{variant === "inverse" ? (
 						<>
 							<Icon name="message-plus" size="lg" />
 							{variant}
 						</>
+					) : variant === "icon" ? (
+						<Icon name="sidebar" size="xl" />
 					) : (
 						variant
 					)}

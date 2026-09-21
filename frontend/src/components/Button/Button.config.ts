@@ -6,6 +6,7 @@ export const BUTTON_VARIANTS = [
 	"accent",
 	"outline",
 	"secondary",
+	"icon",
 ] as const satisfies readonly ButtonVariant[];
 
 /** Вариант по умолчанию */

@@ -89,3 +89,27 @@
 		background: var(--accent-soft);
 	}
 }
+
+.icon {
+	display: inline-grid;
+	place-items: center;
+	flex-shrink: 0;
+	width: var(--size-touch-target);
+	min-height: var(--size-touch-target);
+	height: var(--size-touch-target);
+	padding: 0;
+	gap: 0;
+	border: 0;
+	background: transparent;
+	color: var(--fg);
+
+	&:active:not(:disabled):not([aria-disabled="true"]) {
+		background: var(--bg-pressed);
+	}
+
+	&:disabled,
+	&[aria-disabled="true"] {
+		background: transparent;
+		color: var(--muted);
+	}
+}
