@@ -1,0 +1,7 @@
+node_modules
+dist
+storybook-static
+bun.lock
+coverage
+*.min.js
+src/assets/icons

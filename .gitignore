@@ -4,3 +4,8 @@ venv/
 .venv/
 .claude
 .codex
+
+# Frontend
+frontend/node_modules/
+frontend/dist/
+frontend/*.local
