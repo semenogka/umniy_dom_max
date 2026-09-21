@@ -14,3 +14,14 @@ declare module "*.css" {
 	const content: string;
 	export default content;
 }
+
+interface MaxWebApp {
+	initData: string;
+	initDataUnsafe: Record<string, unknown>;
+	platform: string;
+	version: string;
+}
+
+interface Window {
+	WebApp?: MaxWebApp;
+}

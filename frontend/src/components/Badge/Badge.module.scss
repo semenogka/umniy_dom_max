@@ -1,0 +1,22 @@
+.root {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	box-sizing: border-box;
+	min-width: var(--space-18);
+	height: var(--space-18);
+	padding-inline: var(--space-4);
+	border: 2px solid var(--surface);
+	border-radius: var(--radius-full);
+	background: var(--danger);
+	color: var(--on-accent);
+	font-family: var(--font-body);
+	font-size: var(--text-badge-size);
+	font-weight: var(--text-badge-weight);
+	line-height: var(--text-badge-line);
+	font-variant-numeric: tabular-nums;
+	text-align: center;
+	white-space: nowrap;
+	user-select: none;
+	pointer-events: none;
+}

@@ -15,8 +15,8 @@ const preview: Preview = {
 		},
 		backgrounds: {
 			options: {
-				light: { name: "Светлый", value: "#f4f7fc" },
-				surface: { name: "Поверхность", value: "#ffffff" },
+				light: { name: "Светлый", value: "#ffffff" },
+				app: { name: "App", value: "#f4f7fc" },
 				inverse: { name: "Инверсия", value: "#192a3f" },
 			},
 		},
