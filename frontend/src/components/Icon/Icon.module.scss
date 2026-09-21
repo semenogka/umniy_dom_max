@@ -1,0 +1,20 @@
+.root {
+	display: inline-block;
+	flex-shrink: 0;
+	box-sizing: border-box;
+	background-color: currentColor;
+	mask-image: var(--icon-mask);
+	mask-repeat: no-repeat;
+	mask-position: center;
+	mask-size: contain;
+	-webkit-mask-image: var(--icon-mask);
+	-webkit-mask-repeat: no-repeat;
+	-webkit-mask-position: center;
+	-webkit-mask-size: contain;
+	vertical-align: middle;
+}
+
+.wide {
+	aspect-ratio: 20 / 14;
+	height: auto;
+}

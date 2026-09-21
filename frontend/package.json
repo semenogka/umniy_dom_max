@@ -1,0 +1,46 @@
+{
+	"name": "frontend",
+	"private": true,
+	"version": "0.0.0",
+	"type": "module",
+	"scripts": {
+		"dev": "concurrently -k -n app,storybook -c cyan,magenta \"bun run dev:app\" \"bun run dev:storybook\"",
+		"dev:app": "bunx --bun vite",
+		"dev:storybook": "bunx --bun storybook dev -p 6006",
+		"build": "tsc -b && bunx --bun vite build",
+		"preview": "bunx --bun vite preview",
+		"lint": "biome lint .",
+		"lint:fix": "biome lint --write .",
+		"format": "prettier --write .",
+		"format:check": "prettier --check .",
+		"storybook": "bun run dev:storybook",
+		"build-storybook": "bunx --bun storybook build"
+	},
+	"dependencies": {
+		"react": "^19.2.8",
+		"react-dom": "^19.2.8"
+	},
+	"devDependencies": {
+		"@biomejs/biome": "2.5.14",
+		"@chromatic-com/storybook": "latest",
+		"@storybook/addon-a11y": "^10.6.0",
+		"@storybook/addon-docs": "^10.6.0",
+		"@storybook/addon-mcp": "^10.6.0",
+		"@storybook/addon-vitest": "^10.6.0",
+		"@storybook/react-vite": "^10.6.0",
+		"@types/node": "^24.13.3",
+		"@types/react": "^19.2.18",
+		"@types/react-dom": "^19.2.7",
+		"@vitejs/plugin-react": "^6.1.1",
+		"@vitest/browser-playwright": "5.0.1",
+		"@vitest/coverage-v8": "5.0.1",
+		"concurrently": "^10.0.5",
+		"playwright": "latest",
+		"prettier": "^3.9.8",
+		"sass": "^1.104.1",
+		"storybook": "^10.6.0",
+		"typescript": "~6.0.2",
+		"vite": "^8.3.0",
+		"vitest": "5.0.1"
+	}
+}
