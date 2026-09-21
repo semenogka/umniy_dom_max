@@ -1,0 +1,9 @@
+node_modules
+dist
+storybook-static
+.git
+.DS_Store
+*.log
+Dockerfile
+.dockerignore
+domovoy-backend-test.html

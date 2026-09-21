@@ -1,6 +1,6 @@
 from sqlalchemy import Column, Integer, String, Text, ForeignKey, DateTime, func, Table, Boolean
 from sqlalchemy.orm import relationship
-from db.database import Base
+from umniy_dom_max.db.database import Base
 
 class AppealMessage(Base):
     __tablename__="appeal_messages"
