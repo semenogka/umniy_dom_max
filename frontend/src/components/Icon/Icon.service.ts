@@ -1,7 +1,7 @@
 import type { IconProps, IconSizeToken } from "./Icon.types";
 
 /**
- * Преобразует путь к файлу в имя иконки.
+ * Преобразует путь к файлу в имя иконки
  * @param path {string} - путь к файлу
  * @returns {string} - имя иконки
  */
@@ -11,7 +11,7 @@ export function fileNameToIconName(path: string): string {
 }
 
 /**
- * Строит карту иконок из модулей.
+ * Строит карту иконок из модулей
  * @param modules {Record<string, string>} - модули
  * @returns {Record<string, string>} - карта иконок
  */
@@ -22,7 +22,7 @@ export function buildIconsMap(modules: Record<string, string>): Record<string, s
 }
 
 /**
- * Возвращает список имён иконок.
+ * Возвращает список имён иконок
  * @param icons {Record<string, string>} - карта иконок
  * @returns {string[]} - список имён иконок
  */
@@ -31,7 +31,7 @@ export function listIconNames(icons: Record<string, string>): string[] {
 }
 
 /**
- * Возвращает размер иконки.
+ * Возвращает размер иконки
  * @param size {IconProps["size"]} - размер иконки
  * @param sizes {Record<IconSizeToken, number>} - размеры иконок
  * @returns {number} - размер иконки
@@ -52,7 +52,7 @@ export function resolveIconSize(
 }
 
 /**
- * Возвращает URL иконки.
+ * Возвращает URL иконки
  * @param icons {Record<string, string>} - карта иконок
  * @param name {string} - имя иконки
  * @returns {string | undefined} - URL иконки

@@ -43,8 +43,6 @@ MyWidget/
 
 Если в `index` нет логики связки — `*.view.tsx` не заводим, разметка живёт в `index.tsx`.
 
-Эталон: `src/components/Icon`.
-
 Алиас: `@/` → `src/`.
 
 ## Icon

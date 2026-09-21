@@ -1,0 +1,91 @@
+.root {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	gap: var(--space-8);
+	width: 100%;
+	min-height: var(--size-control-lg);
+	padding-inline: var(--space-16);
+	border: 1px solid transparent;
+	border-radius: var(--radius-lg);
+	font-family: var(--font-body);
+	font-size: var(--text-label-l-size);
+	font-weight: var(--text-label-l-weight);
+	line-height: var(--text-label-l-line);
+	cursor: pointer;
+	user-select: none;
+	transition:
+		background-color 160ms ease,
+		border-color 160ms ease,
+		color 160ms ease,
+		transform 160ms ease;
+
+	&:active:not(:disabled):not([aria-disabled="true"]) {
+		transform: scale(0.98);
+	}
+
+	&:disabled,
+	&[aria-disabled="true"] {
+		cursor: not-allowed;
+		pointer-events: none;
+		background: var(--bg-disabled);
+		border-color: transparent;
+		color: var(--on-disabled);
+		transform: none;
+	}
+}
+
+.inverse {
+	background: var(--bg-inverse);
+	color: var(--on-accent);
+
+	&:active:not(:disabled):not([aria-disabled="true"]) {
+		background: var(--bg-inverse-pressed);
+	}
+}
+
+.accent {
+	background: var(--accent);
+	color: var(--on-accent);
+
+	&:active:not(:disabled):not([aria-disabled="true"]) {
+		background: var(--accent-pressed);
+	}
+}
+
+.outline {
+	background: var(--surface);
+	border-color: var(--border-accent-subtle);
+	color: var(--accent-fg);
+	font-size: var(--text-label-m-size);
+	font-weight: var(--text-label-m-weight);
+	line-height: var(--text-label-m-line);
+
+	&:active:not(:disabled):not([aria-disabled="true"]) {
+		border-color: var(--border-accent);
+		background: var(--accent-soft);
+		color: var(--accent-fg);
+	}
+
+	&:disabled,
+	&[aria-disabled="true"] {
+		border-color: var(--border);
+		background: var(--bg-subtle);
+		color: var(--muted);
+	}
+}
+
+.secondary {
+	min-height: var(--size-touch-target);
+	background: var(--surface);
+	border-color: var(--border);
+	color: var(--fg);
+	font-weight: 600;
+	text-align: left;
+	justify-content: flex-start;
+
+	&:active:not(:disabled):not([aria-disabled="true"]) {
+		border-color: var(--border-accent);
+		background: var(--accent-soft);
+	}
+}

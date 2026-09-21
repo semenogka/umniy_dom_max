@@ -13,7 +13,9 @@
 			"!**/node_modules",
 			"!**/legacy",
 			"!**/public",
-			"!**/src/assets/icons"
+			"!**/src/assets/icons",
+			"!**/storybook-static",
+			"!**/*.html"
 		]
 	},
 	"formatter": {
