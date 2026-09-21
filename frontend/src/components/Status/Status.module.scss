@@ -1,0 +1,29 @@
+.root {
+	display: inline-flex;
+	align-items: center;
+	gap: var(--space-6);
+	min-height: 28px;
+	padding: 5px 9px;
+	border-radius: var(--radius-full);
+	font-family: var(--font-body);
+	font-size: var(--text-caption-s-strong-size);
+	font-weight: var(--text-caption-s-strong-weight);
+	line-height: 1;
+	white-space: nowrap;
+	user-select: none;
+}
+
+.inProgress {
+	background: var(--status-progress-bg);
+	color: var(--status-progress-fg);
+}
+
+.executed {
+	background: var(--status-executed-bg);
+	color: var(--status-executed-fg);
+}
+
+.closed {
+	background: var(--status-closed-bg);
+	color: var(--status-closed-fg);
+}
