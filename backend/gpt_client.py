@@ -35,10 +35,8 @@ class RateLimitError(GPTClientError):
     """Ошибка превышения лимита запросов (429)."""
 
 class GPTClient:
-    def __init__(self, api_key: str | None = None):
+    def __init__(self, api_key: str):
         self.api_key = api_key
-        if not self.api_key:
-            raise RuntimeError("GPT_API_KEY / OPENAI_API_KEY не найден в backend/.env")
         self.last_model: str | None = None
 
     async def llm_request(
@@ -78,11 +76,5 @@ class GPTClient:
                     return text
 
     async def close(self):
-        await self.session.close()
+        pass
 
-# пример без чанков:
-# from gpt_client import GPTClient
-# client = GPTClient()
-# text = await client.chat_completion([{"role":"user","content":"привет"}])
-# print(text)
-# await client.close()
