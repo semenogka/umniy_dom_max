@@ -1,6 +1,6 @@
 import type { InputHTMLAttributes, TextareaHTMLAttributes } from "react";
 
-/** Размер поля: Single (44) · Multi (110) */
+/** Размер поля */
 export type TextFieldSize = "single" | "multi";
 
 /** HTML-элемент поля */

@@ -10,20 +10,20 @@ export type MessageDelivery = "sent" | "delivered" | "read";
 type MessageOwnProps<T extends ElementType = "article"> = {
 	/** HTML-тег или компонент корня */
 	tag?: T;
-	/** Вид: Out · Bot · Operator · Bot Question */
+	/** Вид сообщения */
 	kind?: MessageKind;
-	/** Автор (для out обычно не нужен) */
+	/** Автор */
 	author?: ReactNode;
 	/** Время */
 	time?: ReactNode;
-	/** Галочки доставки (только kind=`out`) */
+	/** Статус доставки */
 	delivery?: MessageDelivery;
 	/** Текст / медиа */
 	children?: ReactNode;
-	/** Кнопки для kind=`bot-question` */
+	/** Кнопки ответа */
 	actions?: ReactNode;
 };
 
-/** Пропсы Message с полиморфным `tag` */
+/** Пропсы Message */
 export type MessageProps<T extends ElementType = "article"> = MessageOwnProps<T> &
 	Omit<ComponentPropsWithoutRef<T>, keyof MessageOwnProps<T>>;

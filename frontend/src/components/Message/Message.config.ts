@@ -14,5 +14,5 @@ export const MESSAGE_KINDS = [
 	"bot-question",
 ] as const satisfies readonly MessageKind[];
 
-/** Доставка по умолчанию (только для out) */
+/** Доставка по умолчанию */
 export const MESSAGE_DEFAULT_DELIVERY = "delivered" as const satisfies MessageDelivery;
