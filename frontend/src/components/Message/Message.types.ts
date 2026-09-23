@@ -18,6 +18,8 @@ type MessageOwnProps<T extends ElementType = "article"> = {
 	time?: ReactNode;
 	/** Статус доставки */
 	delivery?: MessageDelivery;
+	/** Хвостик у угла (у последнего сообщения группы)*/
+	tail?: boolean;
 	/** Текст / медиа */
 	children?: ReactNode;
 	/** Кнопки ответа */

@@ -1,0 +1,108 @@
+.root {
+	display: grid;
+	grid-template-columns: 88px minmax(0, 1fr) 88px;
+	align-items: center;
+	flex-shrink: 0;
+	height: 64px;
+	padding: max(8px, env(safe-area-inset-top)) 10px 8px;
+	border-bottom: 1px solid var(--border);
+	background: color-mix(in oklab, var(--surface) 94%, transparent);
+	position: relative;
+	z-index: 4;
+}
+
+.menu {
+	justify-self: start;
+}
+
+.summary {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: var(--space-4);
+	min-width: 0;
+	width: 100%;
+	min-height: var(--size-touch-target);
+	padding: 3px 2px;
+	border: 0;
+	background: transparent;
+	color: inherit;
+	cursor: pointer;
+	font: inherit;
+	text-align: center;
+
+	&:active:not(:disabled) {
+		transform: scale(0.98);
+	}
+
+	&:disabled {
+		cursor: default;
+	}
+}
+
+.titleBlock {
+	min-width: 0;
+}
+
+.title {
+	display: block;
+	overflow: hidden;
+	font-family: var(--font-body);
+	font-size: var(--text-body-m-size);
+	font-weight: 700;
+	line-height: 1.15;
+	white-space: nowrap;
+	text-overflow: ellipsis;
+	color: var(--fg);
+}
+
+.subtitle {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: 5px;
+	margin-top: 3px;
+	color: var(--muted);
+	font-size: var(--text-micro-size);
+	line-height: 1.1;
+	white-space: nowrap;
+}
+
+.statusDot {
+	width: 6px;
+	height: 6px;
+	flex-shrink: 0;
+	border-radius: var(--radius-full);
+	background: var(--accent);
+}
+
+.statusExecuted {
+	background: var(--success);
+}
+
+.statusClosed {
+	background: var(--muted);
+}
+
+.chevron {
+	flex-shrink: 0;
+	color: var(--muted);
+}
+
+.actions {
+	display: flex;
+	align-items: center;
+	justify-content: flex-end;
+	justify-self: end;
+	width: 88px;
+}
+
+.notification {
+	position: relative;
+}
+
+.badge {
+	position: absolute;
+	top: 5px;
+	right: 4px;
+}

@@ -11,5 +11,7 @@ export function getButtonClassName(
 	variant: ButtonVariant,
 	className?: string,
 ): string {
-	return [styles.root, styles[variant], className].filter(Boolean).join(" ");
+	return [styles.root, variant === "send" && styles.icon, styles[variant], className]
+		.filter(Boolean)
+		.join(" ");
 }

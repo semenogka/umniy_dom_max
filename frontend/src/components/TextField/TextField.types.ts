@@ -11,6 +11,10 @@ type TextFieldOwnProps = {
 	size?: TextFieldSize;
 	/** HTML-тег или компонент корня */
 	tag?: TextFieldTag;
+	/** Автовысота textarea до max */
+	autoGrow?: boolean;
+	/** Максимальная высота при autoGrow, px */
+	autoGrowMaxHeight?: number;
 };
 
 type SharedAttrs = Omit<

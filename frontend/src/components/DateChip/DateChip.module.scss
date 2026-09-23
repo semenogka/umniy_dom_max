@@ -1,0 +1,16 @@
+.root {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: fit-content;
+	padding: var(--space-6) var(--space-10);
+	border-radius: var(--radius-full);
+	background: var(--bg-pressed);
+	color: var(--muted);
+	font-family: var(--font-body);
+	font-size: var(--text-caption-s-size);
+	font-weight: var(--text-caption-s-weight);
+	line-height: var(--text-caption-s-line);
+	white-space: nowrap;
+	user-select: none;
+}

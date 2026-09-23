@@ -16,3 +16,14 @@ export const MESSAGE_KINDS = [
 
 /** Доставка по умолчанию */
 export const MESSAGE_DEFAULT_DELIVERY = "delivered" as const satisfies MessageDelivery;
+
+/** Хвостик у угла по умолчанию */
+export const MESSAGE_DEFAULT_TAIL = true;
+
+/** Имя CSS-класса вида в модуле */
+export const MESSAGE_KIND_CLASS: Record<MessageKind, string> = {
+	out: "out",
+	bot: "bot",
+	operator: "operator",
+	"bot-question": "botQuestion",
+};

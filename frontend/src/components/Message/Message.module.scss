@@ -7,17 +7,24 @@
 	margin: 0;
 	padding: 10px 12px 8px;
 	border: 1px solid transparent;
-	border-radius: var(--radius-xl) var(--radius-xl) var(--radius-xl) var(--radius-xs);
+	border-radius: var(--radius-xl);
 	background: var(--surface);
 	box-shadow: var(--elevation-hairline);
 	color: var(--fg);
 	font-family: var(--font-body);
 }
 
+.tail {
+	border-radius: var(--radius-xl) var(--radius-xl) var(--radius-xl) var(--radius-xs);
+}
+
 .out {
-	border-radius: var(--radius-xl) var(--radius-xl) var(--radius-xs) var(--radius-xl);
 	background: var(--accent-soft);
 	box-shadow: none;
+}
+
+.out.tail {
+	border-radius: var(--radius-xl) var(--radius-xl) var(--radius-xs) var(--radius-xl);
 }
 
 .operator {
@@ -83,6 +90,8 @@
 
 .delivery {
 	color: var(--muted);
+	width: 16px;
+	height: 16px;
 }
 
 .deliveryRead {

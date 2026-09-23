@@ -113,3 +113,19 @@
 		color: var(--muted);
 	}
 }
+
+.send {
+	border-radius: var(--radius-full);
+	background: var(--accent);
+	color: var(--on-accent);
+
+	&:active:not(:disabled):not([aria-disabled="true"]) {
+		background: var(--accent-pressed);
+	}
+
+	&:disabled,
+	&[aria-disabled="true"] {
+		background: var(--bg-disabled);
+		color: var(--on-disabled);
+	}
+}

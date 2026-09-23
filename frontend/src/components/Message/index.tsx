@@ -5,6 +5,7 @@ import {
 	MESSAGE_DEFAULT_DELIVERY,
 	MESSAGE_DEFAULT_KIND,
 	MESSAGE_DEFAULT_TAG,
+	MESSAGE_DEFAULT_TAIL,
 } from "./Message.config";
 import styles from "./Message.module.scss";
 import { getDeliveryLabel, getMessageClassName } from "./Message.service";
@@ -18,6 +19,7 @@ export function Message<T extends ElementType = "article">(props: MessageProps<T
 		author,
 		time,
 		delivery = MESSAGE_DEFAULT_DELIVERY,
+		tail = MESSAGE_DEFAULT_TAIL,
 		actions,
 		className,
 		children,
@@ -28,7 +30,7 @@ export function Message<T extends ElementType = "article">(props: MessageProps<T
 	const showDelivery = kind === "out";
 
 	return (
-		<Tag className={getMessageClassName(styles, kind, className)} {...rest}>
+		<Tag className={getMessageClassName(styles, kind, tail, className)} {...rest}>
 			{author && <div className={styles.author}>{author}</div>}
 
 			{children && <div className={styles.body}>{children}</div>}

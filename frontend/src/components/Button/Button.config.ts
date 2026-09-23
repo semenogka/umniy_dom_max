@@ -7,6 +7,7 @@ export const BUTTON_VARIANTS = [
 	"outline",
 	"secondary",
 	"icon",
+	"send",
 ] as const satisfies readonly ButtonVariant[];
 
 /** Вариант по умолчанию */

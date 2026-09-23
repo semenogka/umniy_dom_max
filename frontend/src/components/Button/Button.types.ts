@@ -1,7 +1,7 @@
 import type { ComponentPropsWithoutRef, ElementType, ReactNode } from "react";
 
 /** Стиль кнопки из дизайн-системы */
-export type ButtonVariant = "inverse" | "accent" | "outline" | "secondary" | "icon";
+export type ButtonVariant = "inverse" | "accent" | "outline" | "secondary" | "icon" | "send";
 
 /** Собственные пропсы кнопки */
 type ButtonOwnProps<T extends ElementType = "button"> = {

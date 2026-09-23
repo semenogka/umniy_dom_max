@@ -41,6 +41,17 @@
 	overflow: hidden;
 }
 
+.autoGrow {
+	height: auto;
+	overflow-y: auto;
+	field-sizing: content;
+	scrollbar-width: none;
+
+	&::-webkit-scrollbar {
+		display: none;
+	}
+}
+
 .multi {
 	min-height: 110px;
 	padding: 12px;
