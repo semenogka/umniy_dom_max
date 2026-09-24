@@ -52,7 +52,7 @@
 	background: var(--bg-subtle);
 	color: var(--fg);
 	text-align: left;
-	cursor: default;
+	cursor: pointer;
 	font: inherit;
 }
 
@@ -101,7 +101,7 @@
 	width: calc(100% - 28px);
 	margin: 4px 14px 8px;
 	min-height: 48px;
-	cursor: default;
+	cursor: pointer;
 }
 
 .residents {

@@ -1,0 +1,102 @@
+.root {
+	display: flex;
+	flex-direction: column;
+	padding-inline: 14px;
+	padding-bottom: 4px;
+	color: var(--fg);
+	font-family: var(--font-body);
+	overscroll-behavior: contain;
+}
+
+.head {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 12px;
+	padding: 0 4px 12px;
+}
+
+.title {
+	margin: 0;
+	font-size: var(--text-heading-l-size);
+	font-weight: var(--text-heading-l-weight);
+	line-height: var(--text-heading-l-line);
+	letter-spacing: var(--text-heading-l-tracking);
+}
+
+.options {
+	display: grid;
+	gap: 8px;
+}
+
+.option {
+	display: grid;
+	grid-template-columns: 38px minmax(0, 1fr) 24px;
+	gap: 11px;
+	align-items: center;
+	width: 100%;
+	min-height: 68px;
+	padding: 10px 12px;
+	border: 0;
+	border-radius: var(--radius-xl);
+	background: var(--bg-subtle);
+	color: var(--fg);
+	text-align: left;
+	cursor: pointer;
+	font: inherit;
+
+	&:active {
+		background: var(--accent-soft);
+		transform: scale(0.985);
+	}
+}
+
+.optionSelected {
+	background: var(--accent-soft);
+}
+
+.optionIcon {
+	display: grid;
+	place-items: center;
+	width: 38px;
+	height: 38px;
+	border-radius: var(--radius-md);
+	background: var(--surface);
+	color: var(--accent);
+	box-shadow: inset 0 0 0 1px var(--border);
+}
+
+.optionCopy {
+	min-width: 0;
+}
+
+.optionAddress,
+.optionApartment {
+	display: block;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.optionAddress {
+	font-size: var(--text-label-m-size);
+	font-weight: 700;
+	line-height: 1.2;
+}
+
+.optionApartment {
+	margin-top: 5px;
+	color: var(--muted);
+	font-size: var(--text-caption-s-size);
+	line-height: 1.2;
+}
+
+.optionCheck {
+	justify-self: end;
+	color: var(--accent);
+	opacity: 0;
+}
+
+.optionSelected .optionCheck {
+	opacity: 1;
+}

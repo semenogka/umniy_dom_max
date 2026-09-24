@@ -42,8 +42,36 @@ export type ChatMock = {
 	badgeCount?: number;
 	/** Мета в списке сайдбара */
 	sidebarMeta?: string;
+	/** Номер заявки */
+	number?: string;
+	/** Оператор заявки */
+	operator?: ChatAppealOperator;
+	/** Акт уже запрошен */
+	actRequested?: boolean;
 	/** Сообщения */
 	messages: ChatMessage[];
+};
+
+/** Оператор заявки */
+export type ChatAppealOperator = {
+	/** ФИО */
+	name: string;
+	/** Роль */
+	role: string;
+	/** Инициалы */
+	initials: string;
+	/** URL аватара */
+	avatarUrl?: string;
+};
+
+/** Дом жителя */
+export type ChatHouse = {
+	/** Идентификатор */
+	id: string;
+	/** Адрес */
+	address: string;
+	/** Квартира */
+	apartment: string;
 };
 
 /** Дом в переключателе сайдбара */
@@ -72,6 +100,8 @@ export type ChatHeaderProps = {
 	chat: ChatMock;
 	/** Открытие сайдбара */
 	onMenuClick: () => void;
+	/** Открытие сведений о заявке */
+	onSummaryClick?: () => void;
 };
 
 /** Пропсы поля ввода на странице чата */

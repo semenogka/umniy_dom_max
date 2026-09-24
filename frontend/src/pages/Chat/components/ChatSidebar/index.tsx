@@ -1,7 +1,7 @@
 import { Button } from "@/components/Button";
 import { Icon } from "@/components/Icon";
 import { STATUS_META } from "@/components/Status/Status.config";
-import { CHAT_SIDEBAR_APPEALS, CHAT_SIDEBAR_HOUSE, CONVERSATION_CHAT_MOCK } from "../../Chat.mock";
+import { CHAT_SIDEBAR_APPEALS, CONVERSATION_CHAT_MOCK } from "../../Chat.mock";
 import {
 	CHAT_SIDEBAR_RESIDENTS_META,
 	CHAT_SIDEBAR_SUPPORT_META,
@@ -17,7 +17,16 @@ import type { ChatSidebarProps } from "./ChatSidebar.types";
 
 /** Содержимое боковой панели чатов */
 export function ChatSidebar(props: ChatSidebarProps) {
-	const { activeChatId, onSelectChat, onClose, className } = props;
+	const {
+		activeChatId,
+		houseAddress,
+		houseMeta,
+		onSelectChat,
+		onNewAppeal,
+		onSelectHouse,
+		onClose,
+		className,
+	} = props;
 	const residentsActive = activeChatId === CONVERSATION_CHAT_MOCK.id;
 
 	return (
@@ -33,20 +42,25 @@ export function ChatSidebar(props: ChatSidebarProps) {
 				</Button>
 			</div>
 
-			<button type="button" className={styles.house} aria-label="Выбрать дом">
+			<button
+				type="button"
+				className={styles.house}
+				aria-label="Выбрать дом"
+				onClick={onSelectHouse}
+			>
 				<span className={styles.houseIcon} aria-hidden>
 					<Icon name="building" size="md" />
 				</span>
 
 				<span className={styles.houseCopy}>
-					<strong className={styles.houseAddress}>{CHAT_SIDEBAR_HOUSE.address}</strong>
-					<span className={styles.houseMeta}>{CHAT_SIDEBAR_HOUSE.meta}</span>
+					<strong className={styles.houseAddress}>{houseAddress}</strong>
+					<span className={styles.houseMeta}>{houseMeta}</span>
 				</span>
 
 				<Icon name="chevron-right" size="sm" className={styles.houseChevron} />
 			</button>
 
-			<Button variant="inverse" type="button" className={styles.newAppeal}>
+			<Button variant="inverse" type="button" className={styles.newAppeal} onClick={onNewAppeal}>
 				<Icon name="message-plus" size="lg" />
 				Новое обращение
 			</Button>
