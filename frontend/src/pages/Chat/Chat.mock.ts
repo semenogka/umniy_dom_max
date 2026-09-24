@@ -1,4 +1,4 @@
-import type { ChatMock } from "./Chat.types";
+import type { ChatMock, ChatSidebarAppealItem, ChatSidebarHouse } from "./Chat.types";
 
 const AVATAR_DOMOVOY = "/favicon.svg";
 const AVATAR_ELENA = "https://i.pravatar.cc/60?u=elena-sokolova";
@@ -15,6 +15,7 @@ export const APPEAL_CHAT_MOCK: ChatMock = {
 	subtitle: "В работе",
 	status: "in-progress",
 	badgeCount: 1,
+	sidebarMeta: "В работе · 12:24",
 	messages: [
 		{
 			id: "1",
@@ -155,6 +156,75 @@ export const APPEAL_CHAT_MOCK: ChatMock = {
 			dateLabel: "Сегодня",
 			text: "Да, если всё в порядке — подтвердите, и мы подготовим акт.",
 			time: "12:07",
+		},
+	],
+};
+
+/** Мок чата заявки — свет */
+export const LIGHT_APPEAL_CHAT_MOCK: ChatMock = {
+	id: "appeal-light",
+	type: "appeal",
+	headerType: "appeal",
+	title: "Не горит свет на этаже",
+	subtitle: "Ждёт подтверждения",
+	status: "executed",
+	sidebarMeta: "Ждёт подтверждения",
+	messages: [
+		{
+			id: "1",
+			kind: "out",
+			dateLabel: "18 сентября",
+			text: "На 5 этаже не горит свет в коридоре уже два дня.",
+			time: "14:10",
+			delivery: "read",
+		},
+		{
+			id: "2",
+			kind: "bot",
+			author: "Домовой",
+			avatarUrl: AVATAR_DOMOVOY,
+			dateLabel: "18 сентября",
+			text: "Обращение № 1901 принято. Электрик выезжает сегодня.",
+			time: "14:12",
+		},
+		{
+			id: "3",
+			kind: "operator",
+			author: "Елена Соколова",
+			avatarUrl: AVATAR_ELENA,
+			dateLabel: "18 сентября",
+			text: "Лампу заменили. Подтвердите, пожалуйста, что свет горит.",
+			time: "17:40",
+		},
+	],
+};
+
+/** Мок чата заявки — вода */
+export const WATER_APPEAL_CHAT_MOCK: ChatMock = {
+	id: "appeal-water",
+	type: "appeal",
+	headerType: "appeal",
+	title: "Перебои с горячей водой",
+	subtitle: "Закрыто",
+	status: "closed",
+	sidebarMeta: "Закрыто · 12 сент.",
+	messages: [
+		{
+			id: "1",
+			kind: "out",
+			dateLabel: "12 сентября",
+			text: "С утра нет горячей воды во всём стояке.",
+			time: "09:05",
+			delivery: "read",
+		},
+		{
+			id: "2",
+			kind: "bot",
+			author: "Домовой",
+			avatarUrl: AVATAR_DOMOVOY,
+			dateLabel: "12 сентября",
+			text: "Заявка закрыта: подача восстановлена.",
+			time: "18:20",
 		},
 	],
 };
@@ -471,8 +541,28 @@ export const CONVERSATION_CHAT_MOCK: ChatMock = {
 /** Чаты по id */
 export const CHAT_MOCKS: Record<string, ChatMock> = {
 	[APPEAL_CHAT_MOCK.id]: APPEAL_CHAT_MOCK,
+	[LIGHT_APPEAL_CHAT_MOCK.id]: LIGHT_APPEAL_CHAT_MOCK,
+	[WATER_APPEAL_CHAT_MOCK.id]: WATER_APPEAL_CHAT_MOCK,
 	[CONVERSATION_CHAT_MOCK.id]: CONVERSATION_CHAT_MOCK,
 };
+
+/** Дом в сайдбаре */
+export const CHAT_SIDEBAR_HOUSE: ChatSidebarHouse = {
+	address: "ул. Луговая, 18",
+	meta: "кв. 42 · 2 дома",
+};
+
+/** Обращения в сайдбаре */
+export const CHAT_SIDEBAR_APPEALS: ChatSidebarAppealItem[] = [
+	APPEAL_CHAT_MOCK,
+	LIGHT_APPEAL_CHAT_MOCK,
+	WATER_APPEAL_CHAT_MOCK,
+].map((chat) => ({
+	id: chat.id,
+	title: chat.id === APPEAL_CHAT_MOCK.id ? "Протечка в подъезде" : chat.title,
+	meta: chat.sidebarMeta ?? chat.subtitle,
+	status: chat.status ?? "in-progress",
+}));
 
 /** Чат по умолчанию */
 export const DEFAULT_CHAT_ID = CONVERSATION_CHAT_MOCK.id;

@@ -41,6 +41,7 @@
 	top: 0;
 	bottom: 0;
 	width: min(86%, 360px);
+	overflow: hidden;
 }
 
 .left {
@@ -109,4 +110,5 @@
 	flex-direction: column;
 	flex: 1;
 	min-height: 0;
+	height: 100%;
 }

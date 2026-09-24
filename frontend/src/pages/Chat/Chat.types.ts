@@ -40,6 +40,44 @@ export type ChatMock = {
 	status?: HeaderStatus;
 	/** Счётчик уведомлений */
 	badgeCount?: number;
+	/** Мета в списке сайдбара */
+	sidebarMeta?: string;
 	/** Сообщения */
 	messages: ChatMessage[];
+};
+
+/** Дом в переключателе сайдбара */
+export type ChatSidebarHouse = {
+	/** Адрес */
+	address: string;
+	/** Доп. сведения */
+	meta: string;
+};
+
+/** Пункт обращения в сайдбаре */
+export type ChatSidebarAppealItem = {
+	/** Id чата */
+	id: string;
+	/** Заголовок */
+	title: string;
+	/** Подпись статуса / времени */
+	meta: string;
+	/** Статус заявки */
+	status: HeaderStatus;
+};
+
+/** Пропсы шапки страницы чата */
+export type ChatHeaderProps = {
+	/** Данные чата */
+	chat: ChatMock;
+	/** Открытие сайдбара */
+	onMenuClick: () => void;
+};
+
+/** Пропсы поля ввода на странице чата */
+export type ChatMessageInputProps = {
+	/** Id чата */
+	chatId: string;
+	/** Отправка сообщения */
+	onSubmit: (text: string) => void;
 };
