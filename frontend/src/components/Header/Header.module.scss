@@ -3,8 +3,8 @@
 	grid-template-columns: 88px minmax(0, 1fr) 88px;
 	align-items: center;
 	flex-shrink: 0;
-	height: 64px;
-	padding: max(8px, env(safe-area-inset-top)) 10px 8px;
+	min-height: calc(64px + env(safe-area-inset-top, 0px));
+	padding: calc(8px + env(safe-area-inset-top, 0px)) 10px 8px;
 	border-bottom: 1px solid var(--border);
 	background: color-mix(in oklab, var(--surface) 94%, transparent);
 	position: relative;

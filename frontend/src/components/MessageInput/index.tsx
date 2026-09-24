@@ -71,6 +71,7 @@ export function MessageInput(props: MessageInputProps) {
 				placeholder={placeholder}
 				aria-label={placeholder}
 				disabled={disabled}
+				className={styles.field}
 				onChange={(event) => handleChange(event.target.value)}
 				onKeyDown={handleKeyDown}
 			/>

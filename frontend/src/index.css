@@ -4,11 +4,26 @@
 	box-sizing: border-box;
 }
 
+html {
+	height: 100%;
+	overflow: hidden;
+	touch-action: manipulation;
+	-webkit-text-size-adjust: 100%;
+}
+
 html,
 body,
 #root {
 	margin: 0;
-	min-height: 100%;
+	width: 100%;
+	max-width: 100%;
+}
+
+body,
+#root {
+	height: 100%;
+	overflow: hidden;
+	overscroll-behavior: none;
 }
 
 body {
@@ -17,6 +32,7 @@ body {
 	background: var(--bg);
 	-webkit-font-smoothing: antialiased;
 	-moz-osx-font-smoothing: grayscale;
+	touch-action: manipulation;
 }
 
 button,
@@ -28,8 +44,10 @@ textarea {
 button,
 a,
 input,
-textarea {
+textarea,
+label {
 	-webkit-tap-highlight-color: transparent;
+	touch-action: manipulation;
 }
 
 img {
