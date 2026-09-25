@@ -18,3 +18,7 @@ class Settings(BaseSettings):
 
     max_token: str = ""
     max_api_url: str = "https://platform-api2.max.ru"
+
+    mail_host: str = "mail.domovoy.stirkk.ru"
+    mail_user: str = "appeals@domovoy.stirkk.ru"
+    mail_password: str = ""
