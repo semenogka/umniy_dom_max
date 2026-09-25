@@ -51,7 +51,7 @@ def main():
         )
 
     @app.exception_handler(Exception)
-    async def server_error_handler(request: Request, exc: Exception):  # noqa: ARG001
+    async def server_error_handler(request: Request, exc: Exception):
         if settings.debug:
             return JSONResponse(
                 status_code=500,

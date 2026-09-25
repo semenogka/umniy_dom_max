@@ -4,15 +4,20 @@ import sys
 import requests
 import urllib3
 from loguru import logger
-from umniy_dom_max.settings import Settings
-from umniy_dom_max.schemas import DemoUserIn
 
-main_attachment = [{
-    "type": "inline_keyboard",
-    "payload": {"buttons": [
-        [{"type": "callback", "text": "Мои обращения", "payload": "my_appeals"}]
-    ]}
-}]
+from umniy_dom_max.schemas import DemoUserIn
+from umniy_dom_max.settings import Settings
+
+main_attachment = [
+    {
+        "type": "inline_keyboard",
+        "payload": {
+            "buttons": [
+                [{"type": "callback", "text": "Мои обращения", "payload": "my_appeals"}]
+            ]
+        },
+    }
+]
 
 
 def main():
@@ -47,7 +52,9 @@ def main():
 
     marker = None
     while True:
-        resp = session.get(f"{api}/updates", params={"marker": marker}, timeout=35).json()
+        resp = session.get(
+            f"{api}/updates", params={"marker": marker}, timeout=35
+        ).json()
         if "code" in resp:
             print(json.dumps(resp, ensure_ascii=False, indent=2))
             break
@@ -61,14 +68,21 @@ def main():
                 name = update.get("user").get("first_name")
 
                 data = DemoUserIn(user_id=user_id, chat_id=chat_id, name=name)
-                requests.post("https://domovoy.stirkk.ru/users/demo", json=data.model_dump())
-                send_msg(chat_id, "Вы успешно зарегестрировались в Домовой! Перейдите в мини приложение, чтобы", attachment=main_attachment)
+                requests.post(
+                    "https://domovoy.stirkk.ru/users/demo", json=data.model_dump()
+                )
+                send_msg(
+                    chat_id,
+                    "Вы успешно зарегестрировались в Домовой! Перейдите в мини приложение, чтобы",
+                    attachment=main_attachment,
+                )
 
             elif update_type == "message_callback":
-            
                 payload = (update.get("callback") or {}).get("payload")
                 if payload == "my_appeals":
-                    send_msg(chat_id, "Тут будут ваши обращения", attachment=main_attachment)
+                    send_msg(
+                        chat_id, "Тут будут ваши обращения", attachment=main_attachment
+                    )
 
 
 if __name__ == "__main__":

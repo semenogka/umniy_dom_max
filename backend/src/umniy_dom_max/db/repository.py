@@ -4,10 +4,21 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from umniy_dom_max.db.models import Appeal, AppealMessage, House, HouseMessage, MessageAttachment, User
+from umniy_dom_max.db.models import (
+    Appeal,
+    AppealMessage,
+    House,
+    HouseMessage,
+    MessageAttachment,
+    User,
+)
 from umniy_dom_max.llm import AppealClassification
 
-APPEAL_WITH_MESSAGES = selectinload(Appeal.messages).selectinload(AppealMessage.attachments)
+APPEAL_MESSAGES = selectinload(Appeal.messages).selectinload(AppealMessage.attachments)
+HOUSE_MESSAGES = selectinload(House.messages).selectinload(HouseMessage.attachments)
+
+
+# пользователи
 
 
 async def get_user(db: AsyncSession, user_id: int) -> User | None:
@@ -15,25 +26,28 @@ async def get_user(db: AsyncSession, user_id: int) -> User | None:
 
 
 async def get_user_with_houses(db: AsyncSession, user_id: int) -> User | None:
-    result = await db.execute(select(User).options(selectinload(User.houses)).where(User.id == user_id))
-    return result.scalars().first()
+    query = select(User).where(User.id == user_id).options(selectinload(User.houses))
+    return await db.scalar(query)
 
 
 async def get_user_full(db: AsyncSession, user_id: int) -> User | None:
-    result = await db.execute(select(User).options(selectinload(User.houses), selectinload(User.appeals)).where(User.id == user_id))
-    return result.scalars().first()
+    query = (
+        select(User)
+        .where(User.id == user_id)
+        .options(selectinload(User.houses), selectinload(User.appeals))
+    )
+    return await db.scalar(query)
 
 
-async def get_random_houses(db: AsyncSession, limit: int) -> list[House]:
-    return list((await db.execute(select(House).order_by(func.random()).limit(limit))).scalars().all())
-
-
-async def create_user(db: AsyncSession, user_id: int, name: str, chat_id: int, houses: list[House]) -> User:
-    user = User(id=user_id, name=name, max_chat_id=chat_id)
-    user.houses.extend(houses)
-    db.add(user)
+async def create_user(
+    db: AsyncSession, user_id: int, name: str, chat_id: int, houses: list[House]
+) -> User:
+    db.add(User(id=user_id, name=name, max_chat_id=chat_id, houses=houses))
     await db.commit()
-    return await get_user_full(db, user.id)
+    return await get_user_full(db, user_id)
+
+
+# обращения
 
 
 async def get_appeal(db: AsyncSession, appeal_id: int) -> Appeal | None:
@@ -41,21 +55,31 @@ async def get_appeal(db: AsyncSession, appeal_id: int) -> Appeal | None:
 
 
 async def get_appeal_detailed(db: AsyncSession, appeal_id: int) -> Appeal | None:
-    result = await db.execute(select(Appeal).options(APPEAL_WITH_MESSAGES).where(Appeal.id == appeal_id))
-    return result.scalars().first()
+    return await db.scalar(
+        select(Appeal).where(Appeal.id == appeal_id).options(APPEAL_MESSAGES)
+    )
 
 
 async def list_appeals_by_address(db: AsyncSession, address: str) -> list[Appeal]:
-    result = await db.execute(select(Appeal).where(Appeal.appeal_address == address).order_by(Appeal.created_at.desc()))
-    return list(result.scalars().all())
+    query = (
+        select(Appeal)
+        .where(Appeal.appeal_address == address)
+        .order_by(Appeal.created_at.desc())
+    )
+    return list(await db.scalars(query))
 
 
-async def list_user_appeals(db: AsyncSession, user_id: int, with_messages: bool = False) -> list[Appeal]:
-    query = select(Appeal).where(Appeal.author_id == user_id).order_by(Appeal.created_at.desc())
+async def list_user_appeals(
+    db: AsyncSession, user_id: int, with_messages: bool = False
+) -> list[Appeal]:
+    query = (
+        select(Appeal)
+        .where(Appeal.author_id == user_id)
+        .order_by(Appeal.created_at.desc())
+    )
     if with_messages:
-        query = query.options(APPEAL_WITH_MESSAGES)
-    result = await db.execute(query)
-    return list(result.scalars().all())
+        query = query.options(APPEAL_MESSAGES)
+    return list(await db.scalars(query))
 
 
 async def create_appeal(
@@ -87,7 +111,9 @@ async def create_appeal(
     return await get_appeal_detailed(db, appeal.id)
 
 
-async def set_appeal_status(db: AsyncSession, appeal: Appeal, status: str, system_text: str | None) -> None:
+async def set_appeal_status(
+    db: AsyncSession, appeal: Appeal, status: str, system_text: str | None
+) -> None:
     appeal.status = status
     if system_text:
         db.add(AppealMessage(appeal_id=appeal.id, sender="system", text=system_text))
@@ -95,24 +121,42 @@ async def set_appeal_status(db: AsyncSession, appeal: Appeal, status: str, syste
 
 
 async def add_appeal_message(
-    db: AsyncSession, appeal_id: int, sender: str, text: str, attachments: list[str], bot_text: str
+    db: AsyncSession,
+    appeal_id: int,
+    sender: str,
+    text: str,
+    attachments: list[str],
+    bot_text: str,
 ) -> AppealMessage:
     msg = await _add_appeal_message(db, appeal_id, sender, text, attachments)
     await _add_appeal_message(db, appeal_id, "bot", bot_text)
     await db.commit()
-    result = await db.execute(select(AppealMessage).options(selectinload(AppealMessage.attachments)).where(AppealMessage.id == msg.id))
-    return result.scalars().first()
+    query = (
+        select(AppealMessage)
+        .where(AppealMessage.id == msg.id)
+        .options(selectinload(AppealMessage.attachments))
+    )
+    return await db.scalar(query)
 
 
 async def _add_appeal_message(
-    db: AsyncSession, appeal_id: int, sender: str, text: str, attachments: Sequence[str] = ()
+    db: AsyncSession,
+    appeal_id: int,
+    sender: str,
+    text: str,
+    attachments: Sequence[str] = (),
 ) -> AppealMessage:
     msg = AppealMessage(appeal_id=appeal_id, sender=sender, text=text)
     db.add(msg)
     await db.flush()
-    for i, b64 in enumerate(attachments):
-        db.add(MessageAttachment(appeal_message_id=msg.id, url=b64, ord=i))
+    db.add_all(
+        MessageAttachment(appeal_message_id=msg.id, url=url, ord=i)
+        for i, url in enumerate(attachments)
+    )
     return msg
+
+
+# дома
 
 
 async def get_house(db: AsyncSession, house_id: int) -> House | None:
@@ -120,16 +164,21 @@ async def get_house(db: AsyncSession, house_id: int) -> House | None:
 
 
 async def get_house_detailed(db: AsyncSession, house_id: int) -> House | None:
-    result = await db.execute(select(House).options(selectinload(House.messages).selectinload(HouseMessage.attachments)).where(House.id == house_id))
-    return result.scalars().first()
+    return await db.scalar(
+        select(House).where(House.id == house_id).options(HOUSE_MESSAGES)
+    )
 
 
 async def get_house_by_address(db: AsyncSession, address: str) -> House | None:
-    return (await db.execute(select(House).where(House.address == address))).scalars().first()
+    return await db.scalar(select(House).where(House.address == address))
+
+
+async def get_random_houses(db: AsyncSession, limit: int) -> list[House]:
+    return list(await db.scalars(select(House).order_by(func.random()).limit(limit)))
 
 
 async def list_houses(db: AsyncSession) -> list[House]:
-    return list((await db.execute(select(House))).scalars().all())
+    return list(await db.scalars(select(House)))
 
 
 async def create_house(db: AsyncSession, address: str) -> House:
@@ -140,12 +189,20 @@ async def create_house(db: AsyncSession, address: str) -> House:
     return house
 
 
-async def add_house_message(db: AsyncSession, house_id: int, sender: str, text: str, attachments: list[str]) -> HouseMessage:
+async def add_house_message(
+    db: AsyncSession, house_id: int, sender: str, text: str, attachments: list[str]
+) -> HouseMessage:
     msg = HouseMessage(house_id=house_id, sender=sender, text=text)
     db.add(msg)
     await db.flush()
-    for i, b64 in enumerate(attachments):
-        db.add(MessageAttachment(house_message_id=msg.id, url=b64, ord=i))
+    db.add_all(
+        MessageAttachment(house_message_id=msg.id, url=url, ord=i)
+        for i, url in enumerate(attachments)
+    )
     await db.commit()
-    result = await db.execute(select(HouseMessage).options(selectinload(HouseMessage.attachments)).where(HouseMessage.id == msg.id))
-    return result.scalars().first()
+    query = (
+        select(HouseMessage)
+        .where(HouseMessage.id == msg.id)
+        .options(selectinload(HouseMessage.attachments))
+    )
+    return await db.scalar(query)

@@ -2,11 +2,13 @@ from datetime import datetime
 
 from pydantic import BaseModel, ConfigDict
 
+
 class AttachmentOut(BaseModel):
-    model_config=ConfigDict(from_attributes=True)
-    id:int 
-    url:str 
-    ord:int
+    model_config = ConfigDict(from_attributes=True)
+    id: int
+    url: str
+    ord: int
+
 
 class AppealIn(BaseModel):
     text: str
@@ -14,6 +16,7 @@ class AppealIn(BaseModel):
     from_name: str
     address: str
     attachments: list[str] = []
+
 
 class StatusIn(BaseModel):
     status: str
@@ -28,6 +31,7 @@ class DemoUserIn(BaseModel):
     chat_id: int
     name: str
 
+
 class MessageOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
@@ -37,15 +41,18 @@ class MessageOut(BaseModel):
     created_at: datetime
     attachments: list[AttachmentOut] = []
 
+
 class MessageIn(BaseModel):
     text: str
     sender: str
     attachments: list[str] = []
 
+
 class HouseOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
     id: int
     address: str
+
 
 class HouseDetailOut(HouseOut):
     messages: list[MessageOut] = []
@@ -67,8 +74,10 @@ class AppealOut(BaseModel):
     action_plan: str | None
     created_at: datetime | None
 
+
 class AppealDetailedOut(AppealOut):
     messages: list[MessageOut] = []
+
 
 class UserOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)

@@ -1,6 +1,8 @@
 from collections.abc import AsyncIterator
+from typing import Annotated
 
 import fastapi
+from fastapi import Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from umniy_dom_max.llm import AppealAgent
@@ -18,3 +20,8 @@ def get_appeal_agent(request: fastapi.Request) -> AppealAgent:
 
 def get_settings(request: fastapi.Request) -> Settings:
     return request.app.state.settings
+
+
+DbSession = Annotated[AsyncSession, Depends(get_db)]
+AppealAgentDep = Annotated[AppealAgent, Depends(get_appeal_agent)]
+SettingsDep = Annotated[Settings, Depends(get_settings)]
