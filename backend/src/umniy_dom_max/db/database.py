@@ -15,7 +15,7 @@ def create_sessionmaker(engine: AsyncEngine) -> async_sessionmaker[AsyncSession]
 
 
 async def init_db(engine: AsyncEngine) -> None:
-    import umniy_dom_max.db.models 
+    import umniy_dom_max.db.models  # noqa: F401
 
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)

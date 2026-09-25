@@ -1,15 +1,11 @@
 import json
 import sys
-from datetime import UTC, datetime
-from umniy_dom_max.db.database import create_engine, create_sessionmaker
 
 import requests
 import urllib3
 from loguru import logger
-from fastapi import FastAPI
 from umniy_dom_max.settings import Settings
 from umniy_dom_max.schemas import DemoUserIn
-app = FastAPI()
 
 main_attachment = [{
     "type": "inline_keyboard",
@@ -17,11 +13,6 @@ main_attachment = [{
         [{"type": "callback", "text": "Мои обращения", "payload": "my_appeals"}]
     ]}
 }]
-
-# reject_attachment = [{
-#     "type": "inline_keyboard",
-#     "payload": {"buttons": [[{"type": "callback", "text": "Отмена", "payload": "reject"}]]}
-# }]
 
 
 def main():
@@ -53,8 +44,6 @@ def main():
         r = session.post(f"{api}/messages", params={"chat_id": chat_id}, json=body)
         logger.info("{} {}", r.status_code, r.text)
         return r
-
-    waiting = set()
 
     marker = None
     while True:

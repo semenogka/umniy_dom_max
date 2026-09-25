@@ -38,7 +38,6 @@ class MessageOut(BaseModel):
     attachments: list[AttachmentOut] = []
 
 class MessageIn(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
     text: str
     sender: str
     attachments: list[str] = []
@@ -48,30 +47,9 @@ class HouseOut(BaseModel):
     id: int
     address: str
 
-class HouseDetailOut(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
-    id: int
-    address: str
-
+class HouseDetailOut(HouseOut):
     messages: list[MessageOut] = []
 
-
-class AppealDetailedOut(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
-
-    id: int
-    text: str
-    status: str
-    author_id: int
-    appeal_address: str | None
-    organization: str | None
-    problem_type: str | None
-    urgency: str | None
-    deadline_days: int | None
-    deadline_text: str | None
-    action_plan: str | None
-    created_at: datetime | None
-    messages: list[MessageOut] = []
 
 class AppealOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
@@ -88,6 +66,9 @@ class AppealOut(BaseModel):
     deadline_text: str | None
     action_plan: str | None
     created_at: datetime | None
+
+class AppealDetailedOut(AppealOut):
+    messages: list[MessageOut] = []
 
 class UserOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
