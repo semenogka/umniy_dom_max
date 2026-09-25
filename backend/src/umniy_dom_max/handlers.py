@@ -4,7 +4,7 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 import requests
-from umniy_dom_max.db.models import Appeal, AppealMessage, House, User, HouseMessage
+from umniy_dom_max.db.models import Appeal, AppealMessage, House, User, HouseMessage, MessageAttachment
 from umniy_dom_max.dependencies import get_appeal_agent, get_db
 from umniy_dom_max.llm import AppealAgent
 from umniy_dom_max.settings import Settings
@@ -68,13 +68,17 @@ async def create_appeal(
     )
     db.add(appeal)
     await db.flush()
-    db.add_all([
-        AppealMessage(appeal_id=appeal.id, sender="user", text=data.text),
-        AppealMessage(appeal_id=appeal.id, sender="bot", text=f"Тип: {classification.problem_type}\nОтветственный: {classification.responsible_org}\n{classification.deadline_text}\nПлан: {classification.action_plan}"),
-    ])
+    user_msg=AppealMessage(appeal_id=appeal.id,sender="user",text=data.text)
+    bot_msg=AppealMessage(appeal_id=appeal.id, sender="bot", text=f"Тип: {classification.problem_type}\nОтветственный: {classification.responsible_org}\n{classification.deadline_text}\nПлан: {classification.action_plan}")
+    db.add(user_msg)
+    db.add(bot_msg)
+    await db.flush()
+    
+    for i,b64 in enumerate(data.attachments or []):
+        db.add(MessageAttachment(appeal_message_id=user_msg.id, url=b64, ord=i))
     await db.commit()
     # перезагрузить с messages для ответа
-    result = await db.execute(select(Appeal).options(selectinload(Appeal.messages)).where(Appeal.id == appeal.id))
+    result = await db.execute(select(Appeal).options(selectinload(Appeal.messages).selectinload(AppealMessage.attachments)).where(Appeal.id == appeal.id))
     return result.scalars().first()
 
 # обновить статус обращения
@@ -121,20 +125,18 @@ async def get_appeal(appeal_id: int, db: AsyncSession = Depends(get_db)):
 
 # отправляем сообщение в обращение.
 @router.post("/appeals/{appeal_id}/message", response_model=MessageOut)
-async def send_message_appeal(appeal_id: int, data: MessageIn, db: AsyncSession = Depends(get_db)):
-    result = await db.execute(select(Appeal).options(selectinload(Appeal.messages)).where(Appeal.id == appeal_id))
-    appeal = result.scalars().first()
-    if not appeal:
-        raise HTTPException(404, "Not found")
-    user_msg = AppealMessage(appeal_id = appeal_id, sender = data.sender, text=data.text)
-    db.add(user_msg)
-    await db.flush()
-    bot_text = f"Статус №{appeal.id}: {appeal.status}\n{appeal.deadline_text or ''}\n{appeal.organization or ''}"
-    bot_msg = AppealMessage(appeal_id=appeal.id, sender="bot", text=bot_text)
-    db.add(bot_msg)
-    await db.commit()
-    await db.refresh(bot_msg)
-    return bot_msg
+async def send_message_appeal(appeal_id:int, data:MessageIn, db:AsyncSession=Depends(get_db)):
+    appeal = (await db.execute(select(Appeal).where(Appeal.id==appeal_id))).scalars().first()
+    if not appeal: raise HTTPException(404)
+    msg = AppealMessage(appeal_id=appeal.id, sender=data.sender, text=data.text)
+    db.add(msg); await db.flush()
+    for i,b64 in enumerate(data.attachments or []):
+        db.add(MessageAttachment(appeal_message_id=msg.id, url=b64, ord=i))
+    bot = AppealMessage(appeal_id=appeal.id, sender="bot",
+        text=f"Статус №{appeal.id}: {appeal.status}\n{appeal.deadline_text or ''}")
+    db.add(bot); await db.commit()
+    result = await db.execute(select(AppealMessage).options(selectinload(AppealMessage.attachments)).where(AppealMessage.id==msg.id))
+    return result.scalars().first()
 
 # получаем все дома юзера
 @router.get("/users/{user_id}/houses", response_model=list[HouseOut])
@@ -157,7 +159,7 @@ async def get_user_info(user_id: int, db: AsyncSession = Depends(get_db)):
 # получаем все обращения пользователя с сообщениями
 @router.get("/users/{user_id}/appeals", response_model=list[AppealDetailedOut])
 async def list_user_appeals(user_id:int, db:AsyncSession=Depends(get_db)):
-    result=await db.execute(select(Appeal).options(selectinload(Appeal.messages)).where(Appeal.author_id==user_id).order_by(Appeal.created_at.desc()))
+    result=await db.execute(select(Appeal).options(selectinload(Appeal.messages).selectinload(AppealMessage.attachments)).where(Appeal.author_id==user_id).order_by(Appeal.created_at.desc()))
     return result.scalars().all()
 
 # получаем все обращения пользователя кратко
@@ -200,6 +202,10 @@ async def send_message(house_id: int, data: MessageIn, db: AsyncSession = Depend
         raise HTTPException(404, "Not found")
     msg = HouseMessage(house_id=house.id, sender=data.sender, text=data.text)
     db.add(msg)
+    await db.flush()
+    for i, b64 in enumerate(data.attachments or []):
+        db.add(MessageAttachment(house_message_id=msg.id, url=b64, ord=i))
     await db.commit()
-    await db.refresh(msg)
-    return msg
+    
+    result = await db.execute(select(HouseMessage).options(selectinload(HouseMessage.attachments)).where(HouseMessage.id==msg.id))
+    return result.scalars().first()

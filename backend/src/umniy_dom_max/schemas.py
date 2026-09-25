@@ -13,6 +13,7 @@ class AppealIn(BaseModel):
     user_id: int
     from_name: str
     address: str
+    attachments: list[str] = []
 
 class StatusIn(BaseModel):
     status: str
@@ -40,6 +41,7 @@ class MessageIn(BaseModel):
     model_config = ConfigDict(from_attributes=True)
     text: str
     sender: str
+    attachments: list[str] = []
 
 class HouseOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
