@@ -136,9 +136,9 @@ async def update_appeal_status(
 
 
 # получаем все обращения с дома.
-@router.get("/appeals", response_model=list[AppealOut])
-async def list_address_appeals(address: str, db: DbSession):
-    return await repository.list_appeals_by_address(db, address)
+@router.get("/appeals/{house_id}", response_model=list[AppealOut])
+async def list_address_by_house_id(house_id: int, db: DbSession):
+    return await repository.list_appeals_by_house_id(db, house_id)
 
 
 # получаем обращение по id
@@ -259,7 +259,7 @@ async def list_houses(db: DbSession):
 
 
 # получаем информацию о доме с сообщениями
-@router.get("/houses/{house_id}", response_model=HouseDetailOut)
+@router.get("/houses/{house_id}/messages", response_model=HouseDetailOut)
 async def get_house_info(house_id: int, db: DbSession):
     house = await repository.get_house_detailed(db, house_id)
     if not house:

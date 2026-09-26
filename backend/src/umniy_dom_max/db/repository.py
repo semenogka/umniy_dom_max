@@ -61,12 +61,17 @@ async def get_appeal_detailed(db: AsyncSession, appeal_id: int) -> Appeal | None
     )
 
 
-async def list_appeals_by_address(db: AsyncSession, address: str) -> list[Appeal]:
+async def list_appeals_by_house_id(db: AsyncSession, house_id: int) -> list[Appeal]:
+    house = await get_house(db, house_id)
+    if not house:
+        return []
+    
     query = (
         select(Appeal)
-        .where(Appeal.appeal_address == address)
+        .where(Appeal.appeal_address == house.address)
         .order_by(Appeal.created_at.desc())
     )
+    
     return list(await db.scalars(query))
 
 
