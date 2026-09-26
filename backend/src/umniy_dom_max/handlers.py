@@ -272,6 +272,8 @@ async def get_house_info(house_id: int, db: DbSession):
 async def send_message(house_id: int, data: MessageIn, db: DbSession):
     house = await repository.get_house(db, house_id)
     user = await repository.get_user(db, data.user_id)
+    if not user:
+        raise HTTPException(404, "Not found")
     sender = user.name
     if not house:
         raise HTTPException(404, "Not found")
