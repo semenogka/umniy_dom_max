@@ -64,16 +64,6 @@ export type ChatAppealOperator = {
 	avatarUrl?: string;
 };
 
-/** Дом жителя */
-export type ChatHouse = {
-	/** Идентификатор */
-	id: string;
-	/** Адрес */
-	address: string;
-	/** Квартира */
-	apartment: string;
-};
-
 /** Дом в переключателе сайдбара */
 export type ChatSidebarHouse = {
 	/** Адрес */
