@@ -12,7 +12,7 @@ import type { HousePickerSidebarProps } from "./HousePickerSidebar.types";
 
 /** Лист выбора дома */
 export function HousePickerSidebar(props: HousePickerSidebarProps) {
-	const { houses, selectedHouseId, onSelectHouse, onClose, className } = props;
+	const { houses, selectedHouse, onSelectHouse, onClose, className } = props;
 	const titleId = useId();
 
 	return (
@@ -29,7 +29,7 @@ export function HousePickerSidebar(props: HousePickerSidebarProps) {
 
 			<div className={styles.options} role="radiogroup" aria-label="Доступные дома">
 				{houses.map((house) => {
-					const selected = house.id === selectedHouseId;
+					const selected = house.id === selectedHouse?.id;
 
 					return (
 						<button
@@ -39,7 +39,7 @@ export function HousePickerSidebar(props: HousePickerSidebarProps) {
 							aria-checked={selected}
 							className={getHousePickerOptionClassName(styles, selected)}
 							onClick={() => {
-								onSelectHouse?.(house.id);
+								onSelectHouse?.(house);
 								onClose?.();
 							}}
 						>
@@ -49,7 +49,6 @@ export function HousePickerSidebar(props: HousePickerSidebarProps) {
 
 							<span className={styles.optionCopy}>
 								<strong className={styles.optionAddress}>{house.address}</strong>
-								<span className={styles.optionApartment}>{house.apartment}</span>
 							</span>
 
 							<Icon name="check" size="lg" className={styles.optionCheck} />

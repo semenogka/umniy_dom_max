@@ -1,4 +1,4 @@
-import type { ChatHouse, ChatMock, ChatSidebarAppealItem, ChatSidebarHouse } from "./Chat.types";
+import type { ChatMock, ChatSidebarAppealItem } from "./Chat.types";
 
 const AVATAR_DOMOVOY = "/favicon.svg";
 const AVATAR_ELENA = "https://i.pravatar.cc/60?u=elena-sokolova";
@@ -566,44 +566,6 @@ export const CHAT_MOCKS: Record<string, ChatMock> = {
 	[WATER_APPEAL_CHAT_MOCK.id]: WATER_APPEAL_CHAT_MOCK,
 	[CONVERSATION_CHAT_MOCK.id]: CONVERSATION_CHAT_MOCK,
 };
-
-/** Дома жителя */
-export const CHAT_HOUSES: ChatHouse[] = [
-	{
-		id: "primary",
-		address: "ул. Луговая, 18",
-		apartment: "кв. 42",
-	},
-	{
-		id: "secondary",
-		address: "просп. Строителей, 27",
-		apartment: "кв. 81",
-	},
-];
-
-/** Дом по умолчанию */
-export const DEFAULT_CHAT_HOUSE_ID = CHAT_HOUSES[0]?.id ?? "primary";
-
-/**
- * Данные дома для кнопки в сайдбаре
- * @param house - выбранный дом
- */
-export function getChatSidebarHouse(house: ChatHouse): ChatSidebarHouse {
-	const housesLabel = CHAT_HOUSES.length === 1 ? "1 дом" : `${CHAT_HOUSES.length} дома`;
-
-	return {
-		address: house.address,
-		meta: `${house.apartment} · ${housesLabel}`,
-	};
-}
-
-/**
- * Строка адреса для формы нового обращения
- * @param house - выбранный дом
- */
-export function getNewAppealHomeContext(house: ChatHouse): string {
-	return `${house.address} · ${house.apartment}`;
-}
 
 /** Обращения в сайдбаре */
 export const CHAT_SIDEBAR_APPEALS: ChatSidebarAppealItem[] = [
