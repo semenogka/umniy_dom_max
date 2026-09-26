@@ -152,33 +152,66 @@ async def get_appeal(appeal_id: int, db: DbSession):
 
 # отправляем сообщение в обращение.
 @router.post("/appeals/{appeal_id}/message", response_model=MessageOut)
-async def send_message_appeal(appeal_id: int, data: MessageIn, db: DbSession, agent: AppealAgentDep,):
+async def send_message_appeal(
+    appeal_id: int,
+    data: MessageIn,
+    db: DbSession,
+    agent: AppealAgentDep,
+):
     appeal = await repository.get_appeal_detailed(db, appeal_id)
+
     if not appeal:
-        raise HTTPException(404) 
+        raise HTTPException(404, "Обращение не найдено")
+
+    user = await repository.get_user(db, data.user_id)
+
+    if not user:
+        raise HTTPException(404, "Пользователь не найден")
+
+    sender = user.name
+
     classification = (await agent.run(data.text)).output
-    if classification.problem_type == 'другая':
+
+    if classification.problem_type == "другая":
         return await repository.add_appeal_message(
-            db, appeal.id, data.sender, data.text, data.attachments, bot_text="Это не является дополнением к обращению."
+            db,
+            appeal.id,
+            sender,
+            data.text,
+            data.attachments,
+            bot_text="Это не является дополнением к обращению.",
         )
-    else:
-        print(classification.problem_type)
-        await asyncio.to_thread(
-            mail.send,
-            to="akuninsemen79@gmail.com",
-            subject=appeal.mail_subject,
+
+    print(classification.problem_type)
+
+    await asyncio.to_thread(
+        mail.send,
+        to="akuninsemen79@gmail.com",
+        subject=appeal.mail_subject,
+        text=data.text,
+        html=html_templates.addition_html(
+            appeal_id=appeal.id,
+            sender=sender,
             text=data.text,
-            html=html_templates.addition_html(
-                appeal_id=appeal.id,
-                sender=data.sender,
-                text=data.text,
-            ),
-            attachments=[{"data": b64, "filename": f"photo_{i}.jpg", "mime": "image/jpeg"} for i, b64 in enumerate(data.attachments or [])],
-        )
-        print(classification)
-        return await repository.add_appeal_message(
-            db, appeal.id, data.sender, data.text, data.attachments, bot_text="Мы приняли дополнительные данные и передали их уполномоченной компании."
-        )
+        ),
+        attachments=[
+            {
+                "data": b64,
+                "filename": f"photo_{i}.jpg",
+                "mime": "image/jpeg",
+            }
+            for i, b64 in enumerate(data.attachments)
+        ],
+    )
+
+    return await repository.add_appeal_message(
+        db,
+        appeal.id,
+        sender,
+        data.text,
+        data.attachments,
+        bot_text="Мы приняли дополнительные данные и передали их уполномоченной компании.",
+    )
     
 
 # получаем все дома юзера
@@ -238,8 +271,10 @@ async def get_house_info(house_id: int, db: DbSession):
 @router.post("/houses/{house_id}/message", response_model=MessageOut)
 async def send_message(house_id: int, data: MessageIn, db: DbSession):
     house = await repository.get_house(db, house_id)
+    user = await repository.get_user(db, data.user_id)
+    sender = user.name
     if not house:
         raise HTTPException(404, "Not found")
     return await repository.add_house_message(
-        db, house.id, data.sender, data.text, data.attachments
+        db, house.id, sender, data.text, data.attachments
     )

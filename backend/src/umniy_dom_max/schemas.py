@@ -11,7 +11,6 @@ class AttachmentOut(BaseModel):
 class AppealIn(BaseModel):
     text: str
     user_id: int
-    from_name: str
     address: str
     attachments: list[str] = []
 
@@ -39,7 +38,7 @@ class MessageOut(BaseModel):
 
 class MessageIn(BaseModel):
     text: str
-    sender: str
+    user_id: int
     attachments: list[str] = []
 
 class HouseOut(BaseModel):

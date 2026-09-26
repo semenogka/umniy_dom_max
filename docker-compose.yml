@@ -1,0 +1,10 @@
+services:
+  api:
+    build:
+      context: ./backend
+    restart: unless-stopped
+    command: ["api"]
+    env_file:
+      - backend/.env
+    ports:
+      - "8000:8000"
