@@ -21,4 +21,4 @@ class Settings(BaseSettings):
 
     mail_host: str = "mail.domovoy.stirkk.ru"
     mail_user: str = "appeals@domovoy.stirkk.ru"
-    mail_password: str = ""
+    mail_password: str = "lBe3MeL0XUTyhoD38x3jlVvjO4Aso9m"

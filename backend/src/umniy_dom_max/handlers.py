@@ -4,9 +4,12 @@ import fastapi
 import requests
 from fastapi import HTTPException
 from loguru import logger
-
+from datetime import datetime
+from umniy_dom_max.mail import Mail
 from umniy_dom_max.db import repository
+from umniy_dom_max.settings import Settings
 from umniy_dom_max.dependencies import AppealAgentDep, DbSession, SettingsDep
+from umniy_dom_max import html as html_templates
 from umniy_dom_max.schemas import (
     AddressIn,
     AppealDetailedOut,
@@ -20,9 +23,9 @@ from umniy_dom_max.schemas import (
     StatusIn,
     UserOut,
 )
-
 router = fastapi.APIRouter()
-
+settings = Settings()
+mail = Mail(settings.mail_host, settings.mail_user, settings.mail_password)
 
 # мок авторизации юзера
 @router.post("/users/demo", response_model=UserOut)
@@ -57,15 +60,38 @@ async def create_appeal(
         raise HTTPException(404, "Not found user")
     if not any(h.address == data.address for h in user.houses):
         raise HTTPException(403, "Address not linked to user")
-
-    bot_text = (
-        f"Тип: {classification.problem_type}\n"
-        f"Ответственный: {classification.responsible_org}\n"
-        f"{classification.deadline_text}\n"
-        f"План: {classification.action_plan}"
+    print(classification)
+    if classification.problem_type == 'другая':
+        bot_text = ("Данное сообщение не явялется обращением.")
+        raise HTTPException(403, "Appeal is bad")
+    else:
+        bot_text = (
+            f"Тип: {classification.problem_type}\n"
+            f"Ответственный: {classification.responsible_org}\n"
+            f"{classification.deadline_text}\n"
+            f"План: {classification.action_plan}"
+        )
+    mail_subject = f"🏠 Новое обращение от {user.name} с адресса {data.address} на тему {classification.problem_type} от {datetime.now()}"
+    await asyncio.to_thread(
+        mail.send,
+        to="akuninsemen79@gmail.com",
+        subject=mail_subject,
+        text=f"Новое обращение \n\n{data.text}\n\n{bot_text}",
+        html=html_templates.new_appeal_html(
+            user_name=user.name,
+            address=data.address,
+            text=data.text,
+            classification_problem_type=classification.problem_type,
+            classification_org=classification.responsible_org,
+            deadline_text=classification.deadline_text,
+            action_plan=classification.action_plan,
+            attachments=[{"data": b64, "filename": f"photo_{i}.jpg", "mime": "image/jpeg"} for i, b64 in enumerate(data.attachments or [])],
+        ),
+        attachments=[{"data": b64, "filename": f"photo_{i}.jpg", "mime": "image/jpeg"} for i, b64 in enumerate(data.attachments or [])],
     )
+
     return await repository.create_appeal(
-        db, user.id, data.address, data.text, data.attachments, classification, bot_text
+        db, user.id, data.address, data.text, data.attachments, classification, bot_text, mail_subject
     )
 
 
@@ -126,15 +152,34 @@ async def get_appeal(appeal_id: int, db: DbSession):
 
 # отправляем сообщение в обращение.
 @router.post("/appeals/{appeal_id}/message", response_model=MessageOut)
-async def send_message_appeal(appeal_id: int, data: MessageIn, db: DbSession):
-    appeal = await repository.get_appeal(db, appeal_id)
+async def send_message_appeal(appeal_id: int, data: MessageIn, db: DbSession, agent: AppealAgentDep,):
+    appeal = await repository.get_appeal_detailed(db, appeal_id)
     if not appeal:
-        raise HTTPException(404)
-    bot_text = f"Статус №{appeal.id}: {appeal.status}\n{appeal.deadline_text or ''}"
-    return await repository.add_appeal_message(
-        db, appeal.id, data.sender, data.text, data.attachments, bot_text
-    )
-
+        raise HTTPException(404) 
+    classification = (await agent.run(data.text)).output
+    if classification.problem_type == 'другая':
+        return await repository.add_appeal_message(
+            db, appeal.id, data.sender, data.text, data.attachments, bot_text="Это не является дополнением к обращению."
+        )
+    else:
+        print(classification.problem_type)
+        await asyncio.to_thread(
+            mail.send,
+            to="akuninsemen79@gmail.com",
+            subject=appeal.mail_subject,
+            text=data.text,
+            html=html_templates.addition_html(
+                appeal_id=appeal.id,
+                sender=data.sender,
+                text=data.text,
+            ),
+            attachments=[{"data": b64, "filename": f"photo_{i}.jpg", "mime": "image/jpeg"} for i, b64 in enumerate(data.attachments or [])],
+        )
+        print(classification)
+        return await repository.add_appeal_message(
+            db, appeal.id, data.sender, data.text, data.attachments, bot_text="Мы приняли дополнительные данные и передали их уполномоченной компании."
+        )
+    
 
 # получаем все дома юзера
 @router.get("/users/{user_id}/houses", response_model=list[HouseOut])

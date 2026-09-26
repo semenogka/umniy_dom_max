@@ -1,6 +1,7 @@
-import email
-import imaplib
+import base64
 import smtplib
+import imaplib
+import email
 from email.message import EmailMessage
 from email.policy import default
 
@@ -11,15 +12,40 @@ class Mail:
         self.user = user
         self.password = password
 
-    def send(self, to: str, subject: str, text: str) -> None:
+    def send(
+        self,
+        to: str,
+        subject: str,
+        text: str,
+        attachments: list[dict] | None = None,
+        html: str | None = None,
+    ) -> str:
         msg = EmailMessage()
         msg["From"] = self.user
         msg["To"] = to
         msg["Subject"] = subject
         msg.set_content(text)
+
+        if html:
+            msg.add_alternative(html, subtype="html")
+
+        if attachments:
+            for att in attachments:
+                b64 = att["data"]
+                if "," in b64:
+                    b64 = b64.split(",", 1)[1]
+                data = base64.b64decode(b64)
+                msg.add_attachment(
+                    data,
+                    maintype=att["mime"].split("/")[0],
+                    subtype=att["mime"].split("/")[1],
+                    filename=att.get("filename", "file"),
+                )
+
         with smtplib.SMTP_SSL(self.host, 465) as smtp:
             smtp.login(self.user, self.password)
             smtp.send_message(msg)
+        return msg["Message-ID"]
 
     # возвращает непрочитанные письма и помечает их прочитанными
     def read(self) -> list[EmailMessage]:
