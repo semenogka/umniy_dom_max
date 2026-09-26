@@ -15,6 +15,23 @@ from umniy_dom_max.settings import Settings
 
 log = logging.getLogger(__name__)
 
+TAGS_METADATA = [
+    {
+        "name": "Пользователи",
+        "description": "Регистрация пользователей (через MAX) и получение информации о них: "
+        "профиль, привязанные дома, история обращений.",
+    },
+    {
+        "name": "Обращения",
+        "description": "Обращения жителей по проблемам в доме: создание, классификация текста через LLM, "
+        "переписка (доп. сообщения) и изменение статуса с уведомлением в чат MAX.",
+    },
+    {
+        "name": "Дома",
+        "description": "Дома, привязанные к пользователям, и общий чат дома, не относящийся к конкретному обращению.",
+    },
+]
+
 
 def main():
     settings = Settings()
@@ -35,6 +52,9 @@ def main():
 
     app = fastapi.FastAPI(
         title="Hack MAX API",
+        description="API бота «Умный дом» для MAX: обращения жителей по проблемам дома, "
+        "их классификация и переписка с управляющей компанией.",
+        openapi_tags=TAGS_METADATA,
         lifespan=lifespan,
         docs_url="/docs" if settings.debug else None,
         redoc_url="/redoc" if settings.debug else None,
