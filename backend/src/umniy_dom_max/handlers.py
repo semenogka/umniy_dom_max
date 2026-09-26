@@ -58,7 +58,10 @@ async def create_appeal(
     user = await repository.get_user_with_houses(db, data.user_id)
     if not user:
         raise HTTPException(404, "Not found user")
-    if not any(h.address == data.address for h in user.houses):
+    house = await repository.get_house(db, data.house_id)
+    if not house:
+        raise HTTPException(404, "Not found house")
+    if not any(h.address == house.address for h in user.houses):
         raise HTTPException(403, "Address not linked to user")
     print(classification)
     if classification.problem_type == 'другая':
@@ -71,7 +74,7 @@ async def create_appeal(
             f"{classification.deadline_text}\n"
             f"План: {classification.action_plan}"
         )
-    mail_subject = f"🏠 Новое обращение от {user.name} с адресса {data.address} на тему {classification.problem_type} от {datetime.now()}"
+    mail_subject = f"🏠 Новое обращение от {user.name} с адресса {house.address} на тему {classification.problem_type} от {datetime.now()}"
     await asyncio.to_thread(
         mail.send,
         to="akuninsemen79@gmail.com",
@@ -79,7 +82,7 @@ async def create_appeal(
         text=f"Новое обращение \n\n{data.text}\n\n{bot_text}",
         html=html_templates.new_appeal_html(
             user_name=user.name,
-            address=data.address,
+            address=house.address,
             text=data.text,
             classification_problem_type=classification.problem_type,
             classification_org=classification.responsible_org,
@@ -91,7 +94,7 @@ async def create_appeal(
     )
 
     return await repository.create_appeal(
-        db, user.id, data.address, data.text, data.attachments, classification, bot_text, mail_subject
+        db, user.id, house.address, data.text, data.attachments, classification, bot_text, mail_subject, user.name
     )
 
 

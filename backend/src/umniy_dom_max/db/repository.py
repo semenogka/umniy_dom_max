@@ -71,7 +71,7 @@ async def list_appeals_by_house_id(db: AsyncSession, house_id: int) -> list[Appe
         .where(Appeal.appeal_address == house.address)
         .order_by(Appeal.created_at.desc())
     )
-    
+
     return list(await db.scalars(query))
 
 
@@ -97,10 +97,11 @@ async def create_appeal(
     classification: AppealClassification,
     bot_text: str,
     mail_subject: str,
+    user_name: str,
 ) -> Appeal:
     appeal = Appeal(
         text=text,
-        status="новое",
+        status="in_progress",
         author_id=author_id,
         appeal_address=address,
         organization=classification.responsible_org,
@@ -113,7 +114,7 @@ async def create_appeal(
     )
     db.add(appeal)
     await db.flush()
-    await _add_appeal_message(db, appeal.id, "user", text, attachments)
+    await _add_appeal_message(db, appeal.id, user_name, text, attachments)
     await _add_appeal_message(db, appeal.id, "bot", bot_text)
     await db.commit()
     return await get_appeal_detailed(db, appeal.id)

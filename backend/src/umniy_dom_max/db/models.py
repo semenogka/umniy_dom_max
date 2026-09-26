@@ -96,7 +96,7 @@ class Appeal(Base):
     author_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     appeal_address = Column(String, nullable=True)
     organization = Column(String, nullable=True)
-    
+
     problem_type = Column(String, nullable=True)
     urgency = Column(String, nullable=True)
     deadline_days = Column(Integer, nullable=True)
