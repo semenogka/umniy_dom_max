@@ -26,7 +26,6 @@ class AppealMessage(Base):
     appeal = relationship("Appeal", back_populates="messages")
     attachments = relationship("MessageAttachment", cascade="all, delete-orphan")
 
-
 user_houses = Table(
     "user_houses",
     Base.metadata,
@@ -116,3 +115,4 @@ class Appeal(Base):
     )
 
     author = relationship("User", back_populates="appeals")
+    mail_subject = Column(String, nullable=False)

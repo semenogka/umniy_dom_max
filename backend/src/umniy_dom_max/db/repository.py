@@ -2,6 +2,7 @@ from collections.abc import Sequence
 
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
+import asyncio
 from sqlalchemy.orm import selectinload
 
 from umniy_dom_max.db.models import (
@@ -90,6 +91,7 @@ async def create_appeal(
     attachments: list[str],
     classification: AppealClassification,
     bot_text: str,
+    mail_subject: str,
 ) -> Appeal:
     appeal = Appeal(
         text=text,
@@ -102,6 +104,7 @@ async def create_appeal(
         deadline_days=classification.deadline_days,
         deadline_text=classification.deadline_text,
         action_plan=classification.action_plan,
+        mail_subject=mail_subject,
     )
     db.add(appeal)
     await db.flush()
@@ -128,16 +131,14 @@ async def add_appeal_message(
     attachments: list[str],
     bot_text: str,
 ) -> AppealMessage:
-    msg = await _add_appeal_message(db, appeal_id, sender, text, attachments)
-    await _add_appeal_message(db, appeal_id, "bot", bot_text)
-    await db.commit()
-    query = (
-        select(AppealMessage)
-        .where(AppealMessage.id == msg.id)
-        .options(selectinload(AppealMessage.attachments))
+    msg = await _add_appeal_message(
+        db, appeal_id, sender, text, attachments
     )
+    if bot_text:
+        await _add_appeal_message(db, appeal_id, "bot", bot_text)
+    await db.commit()
+    query = select(AppealMessage).where(AppealMessage.id == msg.id).options(selectinload(AppealMessage.attachments))
     return await db.scalar(query)
-
 
 async def _add_appeal_message(
     db: AsyncSession,
@@ -149,9 +150,10 @@ async def _add_appeal_message(
     msg = AppealMessage(appeal_id=appeal_id, sender=sender, text=text)
     db.add(msg)
     await db.flush()
+    
     db.add_all(
         MessageAttachment(appeal_message_id=msg.id, url=url, ord=i)
-        for i, url in enumerate(attachments)
+        for i, url in enumerate(attachments or [])
     )
     return msg
 
