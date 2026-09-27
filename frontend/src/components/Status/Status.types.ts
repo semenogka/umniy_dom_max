@@ -1,7 +1,7 @@
 import type { ComponentPropsWithoutRef, ElementType, ReactNode } from "react";
 
 /** Статус заявки */
-export type StatusValue = "in-progress" | "executed" | "closed";
+export type StatusValue = "in_progress" | "dop" | "checked" | "close";
 
 /** Собственные пропсы Status */
 type StatusOwnProps<T extends ElementType = "span"> = {

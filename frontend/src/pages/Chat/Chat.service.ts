@@ -1,8 +1,10 @@
+import { STATUS_META } from "@/components/Status/Status.config";
+import type { Appeal } from "@/store/appeals/appeals.types";
 import type { House } from "@/store/houses/houses.types";
 import { pluralizeRu } from "@/utils/pluralizeRu";
 
 import { CHAT_MOCKS, DEFAULT_CHAT_ID } from "./Chat.mock";
-import type { ChatMock, ChatSidebarHouse } from "./Chat.types";
+import type { ChatMock, ChatSidebarAppealItem, ChatSidebarHouse } from "./Chat.types";
 
 /**
  * Собирает className страницы чата
@@ -32,5 +34,20 @@ export function getChatSidebarHouse(house: House, housesCount: number): ChatSide
 	return {
 		address: house.address,
 		meta: pluralizeRu(housesCount, ["дом", "дома", "домов"], true),
+	};
+}
+
+/**
+ * Пункт сайдбара из обращения API
+ * @param appeal - обращение
+ */
+export function toChatSidebarAppealItem(appeal: Appeal): ChatSidebarAppealItem {
+	const title = appeal.problem_type?.trim() || appeal.text.trim() || `Обращение №${appeal.id}`;
+
+	return {
+		id: String(appeal.id),
+		title,
+		meta: STATUS_META[appeal.status].label,
+		status: appeal.status,
 	};
 }

@@ -21,9 +21,9 @@ import type { AppealDetailsSidebarProps } from "./AppealDetailsSidebar.types";
 export function AppealDetailsSidebar(props: AppealDetailsSidebarProps) {
 	const { chat, actRequested = false, onRequestAct, onClose, className } = props;
 	const titleId = useId();
-	const status = chat.status ?? "in-progress";
+	const status = chat.status ?? "in_progress";
 	const statusMeta = STATUS_META[status];
-	const showActAction = status === "in-progress";
+	const showActAction = status === "in_progress";
 
 	return (
 		<div className={getAppealDetailsSidebarClassName(styles, className)} aria-labelledby={titleId}>

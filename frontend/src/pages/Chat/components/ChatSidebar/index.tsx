@@ -1,7 +1,7 @@
 import { Button } from "@/components/Button";
 import { Icon } from "@/components/Icon";
 import { STATUS_META } from "@/components/Status/Status.config";
-import { CHAT_SIDEBAR_APPEALS, CONVERSATION_CHAT_MOCK } from "../../Chat.mock";
+import { CONVERSATION_CHAT_MOCK } from "../../Chat.mock";
 import {
 	CHAT_SIDEBAR_RESIDENTS_META,
 	CHAT_SIDEBAR_SUPPORT_META,
@@ -21,6 +21,7 @@ export function ChatSidebar(props: ChatSidebarProps) {
 		activeChatId,
 		houseAddress,
 		houseMeta,
+		appeals,
 		onSelectChat,
 		onNewAppeal,
 		onSelectHouse,
@@ -90,7 +91,7 @@ export function ChatSidebar(props: ChatSidebarProps) {
 			</div>
 
 			<nav className={styles.list} aria-label="Обращения">
-				{CHAT_SIDEBAR_APPEALS.map((appeal) => {
+				{appeals.map((appeal) => {
 					const active = appeal.id === activeChatId;
 					const icon = STATUS_META[appeal.status].icon;
 

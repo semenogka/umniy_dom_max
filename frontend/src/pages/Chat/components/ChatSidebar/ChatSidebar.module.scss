@@ -266,12 +266,12 @@
 	color: var(--status-progress-fg);
 }
 
-.statusExecuted {
+.statusChecked {
 	background: var(--status-executed-bg);
 	color: var(--status-executed-fg);
 }
 
-.statusClosed {
+.statusClose {
 	background: var(--status-closed-bg);
 	color: var(--status-closed-fg);
 }

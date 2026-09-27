@@ -4,12 +4,18 @@ import { useNavigate, useParams } from "react-router-dom";
 import { Header } from "@/components/Header";
 import { MessageInput } from "@/components/MessageInput";
 import { Sidebar } from "@/components/Sidebar";
+import { fetchHouseAppeals } from "@/store/appeals/appeals.slice";
 import { fetchUserHouses, selectHouse } from "@/store/houses/houses.slice";
 import type { House } from "@/store/houses/houses.types";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 
 import styles from "./Chat.module.scss";
-import { getChatPageClassName, getChatSidebarHouse, resolveChat } from "./Chat.service";
+import {
+	getChatPageClassName,
+	getChatSidebarHouse,
+	resolveChat,
+	toChatSidebarAppealItem,
+} from "./Chat.service";
 import type { ChatHeaderProps, ChatMessageInputProps } from "./Chat.types";
 import { AppealDetailsSidebar } from "./components/AppealDetailsSidebar";
 import { ChatSidebar } from "./components/ChatSidebar";
@@ -73,6 +79,7 @@ export function ChatPage() {
 
 	const houses = useAppSelector((state) => state.houses.items);
 	const selectedHouse = useAppSelector((state) => state.houses.selectedHouse);
+	const appeals = useAppSelector((state) => state.appeals.items);
 
 	const [sidebarOpen, setSidebarOpen] = useState(false);
 	const [newAppealOpen, setNewAppealOpen] = useState(false);
@@ -81,12 +88,19 @@ export function ChatPage() {
 	const [actRequestedByChat, setActRequestedByChat] = useState<Record<string, boolean>>({});
 
 	const sidebarHouse = selectedHouse ? getChatSidebarHouse(selectedHouse, houses.length) : null;
+	const sidebarAppeals = appeals.map(toChatSidebarAppealItem);
 	const newAppealHomeContext = selectedHouse?.address;
 	const actRequested = Boolean(chat.actRequested || actRequestedByChat[chat.id]);
 
 	useEffect(() => {
 		dispatch(fetchUserHouses());
 	}, [dispatch]);
+
+	useEffect(() => {
+		if (!selectedHouse) return;
+
+		dispatch(fetchHouseAppeals(selectedHouse.id));
+	}, [dispatch, selectedHouse?.id]);
 
 	/**
 	 * Отправка сообщения в ленту
@@ -216,6 +230,7 @@ export function ChatPage() {
 						activeChatId={chat.id}
 						houseAddress={sidebarHouse.address}
 						houseMeta={sidebarHouse.meta}
+						appeals={sidebarAppeals}
 						onSelectChat={handleSelectChat}
 						onNewAppeal={handleOpenNewAppeal}
 						onSelectHouse={handleOpenHousePicker}

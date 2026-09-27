@@ -1,10 +1,9 @@
 import type { ComponentPropsWithoutRef, ReactNode } from "react";
 
+import type { StatusValue } from "@/components/Status/Status.types";
+
 /** Тип шапки */
 export type HeaderType = "appeal" | "conversation";
-
-/** Статус заявки в подзаголовке */
-export type HeaderStatus = "in-progress" | "executed" | "closed";
 
 export type HeaderProps = {
 	/** Тип: appeal или conversation */
@@ -14,7 +13,7 @@ export type HeaderProps = {
 	/** Подзаголовок */
 	subtitle?: ReactNode;
 	/** Статус для точки в appeal */
-	status?: HeaderStatus;
+	status?: StatusValue;
 	/** Счётчик уведомлений */
 	badgeCount?: number;
 	/** Клик по центру */

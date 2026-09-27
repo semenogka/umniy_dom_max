@@ -1,4 +1,4 @@
-import type { HeaderStatus } from "@/components/Header/Header.types";
+import type { StatusValue } from "@/components/Status/Status.types";
 
 /**
  * Собирает className корня ChatSidebar
@@ -33,14 +33,14 @@ export function getChatSidebarItemClassName(
  */
 export function getChatSidebarStatusIconClassName(
 	styles: Record<string, string>,
-	status: HeaderStatus,
+	status: StatusValue,
 ): string {
 	const statusClass =
-		status === "in-progress"
+		status === "in_progress" || status === "dop"
 			? styles.statusInProgress
-			: status === "executed"
-				? styles.statusExecuted
-				: styles.statusClosed;
+			: status === "checked"
+				? styles.statusChecked
+				: styles.statusClose;
 
 	return [styles.statusIcon, statusClass].join(" ");
 }

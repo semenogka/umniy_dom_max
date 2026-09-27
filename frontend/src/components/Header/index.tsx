@@ -13,7 +13,7 @@ export function Header(props: HeaderProps) {
 		type = HEADER_DEFAULT_TYPE,
 		title,
 		subtitle,
-		status = "in-progress",
+		status = "in_progress",
 		badgeCount,
 		onSummaryClick,
 		onMenuClick,

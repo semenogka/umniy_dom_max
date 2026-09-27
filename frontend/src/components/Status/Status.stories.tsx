@@ -21,8 +21,8 @@ const meta = {
 	component: Status,
 	tags: ["autodocs"],
 	args: {
-		status: "in-progress",
-		children: <StatusContent status="in-progress" />,
+		status: "in_progress",
+		children: <StatusContent status="in_progress" />,
 	},
 	argTypes: {
 		status: {
@@ -50,22 +50,29 @@ export const Default: Story = {};
 
 export const InProgress: Story = {
 	args: {
-		status: "in-progress",
-		children: <StatusContent status="in-progress" />,
+		status: "in_progress",
+		children: <StatusContent status="in_progress" />,
 	},
 };
 
-export const Executed: Story = {
+export const Dop: Story = {
 	args: {
-		status: "executed",
-		children: <StatusContent status="executed" />,
+		status: "dop",
+		children: <StatusContent status="dop" />,
 	},
 };
 
-export const Closed: Story = {
+export const Checked: Story = {
 	args: {
-		status: "closed",
-		children: <StatusContent status="closed" />,
+		status: "checked",
+		children: <StatusContent status="checked" />,
+	},
+};
+
+export const Close: Story = {
+	args: {
+		status: "close",
+		children: <StatusContent status="close" />,
 	},
 };
 

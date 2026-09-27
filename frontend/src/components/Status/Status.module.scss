@@ -13,17 +13,18 @@
 	user-select: none;
 }
 
-.inProgress {
+.inProgress,
+.dop {
 	background: var(--status-progress-bg);
 	color: var(--status-progress-fg);
 }
 
-.executed {
+.checked {
 	background: var(--status-executed-bg);
 	color: var(--status-executed-fg);
 }
 
-.closed {
+.close {
 	background: var(--status-closed-bg);
 	color: var(--status-closed-fg);
 }

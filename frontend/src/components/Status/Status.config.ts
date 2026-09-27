@@ -4,26 +4,31 @@ import type { StatusValue } from "./Status.types";
 export const STATUS_DEFAULT_TAG = "span" as const;
 
 /** Статус по умолчанию */
-export const STATUS_DEFAULT_VALUE = "in-progress" as const satisfies StatusValue;
+export const STATUS_DEFAULT_VALUE = "in_progress" as const satisfies StatusValue;
 
 /** Варианты статуса заявки */
 export const STATUS_VALUES = [
-	"in-progress",
-	"executed",
-	"closed",
+	"in_progress",
+	"dop",
+	"checked",
+	"close",
 ] as const satisfies readonly StatusValue[];
 
 /** Подписи и иконки по статусу */
 export const STATUS_META = {
-	"in-progress": {
+	in_progress: {
 		label: "В работе",
 		icon: "status-progress",
 	},
-	executed: {
-		label: "Исполнено",
+	dop: {
+		label: "Дополните",
+		icon: "status-progress",
+	},
+	checked: {
+		label: "Проверено",
 		icon: "status-executed",
 	},
-	closed: {
+	close: {
 		label: "Закрыто",
 		icon: "status-closed",
 	},
