@@ -1,12 +1,14 @@
-import { memo, useCallback, useEffect, useRef, useState } from "react";
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 
 import { Header } from "@/components/Header";
 import { MessageInput } from "@/components/MessageInput";
 import { Sidebar } from "@/components/Sidebar";
 import { fetchHouseAppeals } from "@/store/appeals/appeals.slice";
+import { fetchHouseMessages, sendHouseMessage } from "@/store/houseChat/houseChat.slice";
 import { fetchUserHouses, selectHouse } from "@/store/houses/houses.slice";
 import type { House } from "@/store/houses/houses.types";
+import { initCurrentUser } from "@/store/user/user.slice";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 
 import styles from "./Chat.module.scss";
@@ -84,6 +86,9 @@ export function ChatPage() {
 	const housesStatus = useAppSelector((state) => state.houses.status);
 	const selectedHouse = useAppSelector((state) => state.houses.selectedHouse);
 	const appeals = useAppSelector((state) => state.appeals.items);
+	const houseMessages = useAppSelector((state) => state.houseChat.messages);
+	const ownSenderName = useAppSelector((state) => state.houseChat.ownSenderName);
+	const currentUser = useAppSelector((state) => state.user.current);
 
 	const [sidebarOpen, setSidebarOpen] = useState(false);
 	const [newAppealOpen, setNewAppealOpen] = useState(false);
@@ -92,15 +97,25 @@ export function ChatPage() {
 	const [actRequestedByChat, setActRequestedByChat] = useState<Record<string, boolean>>({});
 
 	const houseId = houseIdParam ?? (selectedHouse ? String(selectedHouse.id) : undefined);
-	const chat = appealId
-		? resolveAppealChat(appealId, appeals)
-		: resolveHouseChat(houseId ?? "house");
+	const isHouseChat = !appealId;
+	const currentUserName = currentUser?.name ?? ownSenderName;
+	const chat = useMemo(() => {
+		if (appealId) return resolveAppealChat(appealId, appeals);
+
+		return resolveHouseChat(
+			houseId ?? "house",
+			houseMessages,
+			selectedHouse?.address,
+			currentUserName,
+		);
+	}, [appealId, appeals, currentUserName, houseId, houseMessages, selectedHouse?.address]);
 	const sidebarHouse = selectedHouse ? getChatSidebarHouse(selectedHouse, houses.length) : null;
 	const sidebarAppeals = appeals.map(toChatSidebarAppealItem);
 	const newAppealHomeContext = selectedHouse?.address;
 	const actRequested = Boolean(chat.actRequested || actRequestedByChat[chat.id]);
 
 	useEffect(() => {
+		dispatch(initCurrentUser());
 		dispatch(fetchUserHouses());
 	}, [dispatch]);
 
@@ -128,14 +143,35 @@ export function ChatPage() {
 		dispatch(fetchHouseAppeals(selectedHouse.id));
 	}, [dispatch, selectedHouse?.id]);
 
+	useEffect(() => {
+		if (!selectedHouse || !isHouseChat) return;
+
+		dispatch(fetchHouseMessages(selectedHouse.id));
+	}, [dispatch, isHouseChat, selectedHouse?.id]);
+
 	/**
 	 * Отправка сообщения в ленту
 	 * @param text - текст сообщения
 	 * @returns {void}
 	 */
-	const handleSubmit = useCallback((text: string) => {
-		messageListRef.current?.addMessage(text);
-	}, []);
+	const handleSubmit = useCallback(
+		(text: string) => {
+			if (isHouseChat && selectedHouse) {
+				dispatch(
+					sendHouseMessage({
+						houseId: selectedHouse.id,
+						text,
+						clientId: crypto.randomUUID(),
+						senderName: currentUserName ?? "Я",
+					}),
+				);
+				return;
+			}
+
+			messageListRef.current?.addMessage(text);
+		},
+		[currentUserName, dispatch, isHouseChat, selectedHouse],
+	);
 
 	/**
 	 * Открытие боковой панели чатов

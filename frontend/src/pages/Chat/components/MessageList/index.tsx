@@ -8,6 +8,7 @@ import {
 	useRef,
 	useState,
 } from "react";
+import { format } from "date-fns";
 
 import { DateChip } from "@/components/DateChip";
 import { Message } from "@/components/Message";
@@ -129,10 +130,7 @@ export const MessageList = memo(function MessageList({ chat, ref }: MessageListP
 					kind: "out",
 					dateLabel: CHAT_TODAY_LABEL,
 					text,
-					time: new Date().toLocaleTimeString("ru-RU", {
-						hour: "2-digit",
-						minute: "2-digit",
-					}),
+					time: format(new Date(), "HH:mm"),
 					delivery: "sent",
 				};
 

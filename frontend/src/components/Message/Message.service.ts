@@ -1,5 +1,5 @@
 import { MESSAGE_KIND_CLASS } from "./Message.config";
-import type { MessageKind } from "./Message.types";
+import type { MessageDelivery, MessageKind } from "./Message.types";
 
 /**
  * Собирает className Message из CSS-модуля
@@ -23,9 +23,10 @@ export function getMessageClassName(
  * Подпись для иконки доставки
  * @param delivery - статус доставки
  */
-export function getDeliveryLabel(delivery: "sent" | "delivered" | "read"): string {
+export function getDeliveryLabel(delivery: MessageDelivery): string {
+	if (delivery === "pending") return "Отправляется";
+	if (delivery === "error") return "Ошибка отправки";
 	if (delivery === "read") return "Прочитано";
-
 	if (delivery === "delivered") return "Доставлено";
 
 	return "Отправлено";

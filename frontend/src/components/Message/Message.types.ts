@@ -4,7 +4,7 @@ import type { ComponentPropsWithoutRef, ElementType, ReactNode } from "react";
 export type MessageKind = "out" | "bot" | "operator" | "bot-question";
 
 /** Статус доставки исходящего */
-export type MessageDelivery = "sent" | "delivered" | "read";
+export type MessageDelivery = "pending" | "error" | "sent" | "delivered" | "read";
 
 /** Собственные пропсы Message */
 type MessageOwnProps<T extends ElementType = "article"> = {

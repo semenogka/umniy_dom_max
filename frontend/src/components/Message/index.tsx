@@ -9,7 +9,44 @@ import {
 } from "./Message.config";
 import styles from "./Message.module.scss";
 import { getDeliveryLabel, getMessageClassName } from "./Message.service";
-import type { MessageProps } from "./Message.types";
+import type { MessageDelivery, MessageProps } from "./Message.types";
+
+/**
+ * Иконка / индикатор доставки
+ * @param delivery - статус доставки
+ */
+function DeliveryStatus({ delivery }: { delivery: MessageDelivery }) {
+	const label = getDeliveryLabel(delivery);
+
+	if (delivery === "pending") {
+		return (
+			<span className={styles.deliveryPending} role="status" aria-label={label} title={label} />
+		);
+	}
+
+	if (delivery === "error") {
+		return (
+			<Icon
+				name="message-error"
+				size={14}
+				className={[styles.delivery, styles.deliveryError].join(" ")}
+				title={label}
+			/>
+		);
+	}
+
+	return (
+		<Icon
+			name={delivery === "sent" ? "check" : "delivery-read"}
+			size={delivery === "sent" ? 12 : undefined}
+			className={[styles.delivery, delivery === "read" && styles.deliveryRead]
+				.filter(Boolean)
+				.join(" ")}
+			title={label}
+			style={delivery === "sent" ? undefined : { width: 17, height: 12 }}
+		/>
+	);
+}
 
 /** Message дизайн-системы «Домовой» */
 export function Message<T extends ElementType = "article">(props: MessageProps<T>) {
@@ -40,17 +77,7 @@ export function Message<T extends ElementType = "article">(props: MessageProps<T
 			{(time || showDelivery) && (
 				<div className={styles.meta}>
 					{time && <time className={styles.time}>{time}</time>}
-					{showDelivery && (
-						<Icon
-							name={delivery === "sent" ? "check" : "delivery-read"}
-							size={delivery === "sent" ? 12 : undefined}
-							className={[styles.delivery, delivery === "read" && styles.deliveryRead]
-								.filter(Boolean)
-								.join(" ")}
-							title={getDeliveryLabel(delivery)}
-							style={delivery === "sent" ? undefined : { width: 17, height: 12 }}
-						/>
-					)}
+					{showDelivery && <DeliveryStatus delivery={delivery} />}
 				</div>
 			)}
 		</Tag>

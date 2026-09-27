@@ -1,10 +1,13 @@
+import { format, isToday, isYesterday, parseISO } from "date-fns";
+import { ru } from "date-fns/locale";
+
 import { STATUS_META } from "@/components/Status/Status.config";
 import type { Appeal } from "@/store/appeals/appeals.types";
-import type { House } from "@/store/houses/houses.types";
+import type { House, HouseMessage } from "@/store/houses/houses.types";
 import { pluralizeRu } from "@/utils/pluralizeRu";
 
-import { CONVERSATION_CHAT_MOCK } from "./Chat.mock";
-import type { ChatMock, ChatSidebarAppealItem, ChatSidebarHouse } from "./Chat.types";
+import { CHAT_TODAY_LABEL, CONVERSATION_CHAT_MOCK } from "./Chat.mock";
+import type { ChatMessage, ChatMock, ChatSidebarAppealItem, ChatSidebarHouse } from "./Chat.types";
 
 /**
  * Собирает className страницы чата
@@ -16,13 +19,63 @@ export function getChatPageClassName(styles: Record<string, string>, className?:
 }
 
 /**
+ * Время сообщения
+ * @param iso - ISO-дата с бэка
+ */
+function formatMessageTime(iso: string): string {
+	return format(parseISO(iso), "HH:mm");
+}
+
+/**
+ * Подпись дня для ленты
+ * @param iso - ISO-дата с бэка
+ */
+function formatMessageDateLabel(iso: string): string {
+	const date = parseISO(iso);
+
+	if (isToday(date)) return CHAT_TODAY_LABEL;
+	if (isYesterday(date)) return "Вчера";
+
+	return format(date, "d MMMM", { locale: ru });
+}
+
+/**
+ * Сообщение API → сообщение ленты
+ * @param message - сообщение с бэка
+ * @param currentUserName - имя текущего пользователя
+ */
+export function toChatMessage(message: HouseMessage, currentUserName?: string | null): ChatMessage {
+	const isOut = Boolean(currentUserName && message.sender === currentUserName);
+
+	return {
+		id: message.clientId ?? String(message.id),
+		kind: isOut ? "out" : "bot",
+		author: isOut ? undefined : message.sender,
+		text: message.text,
+		time: formatMessageTime(message.created_at),
+		dateLabel: formatMessageDateLabel(message.created_at),
+		delivery: isOut ? (message.delivery ?? "sent") : undefined,
+	};
+}
+
+/**
  * Чат жителей для выбранного дома
  * @param houseId - id дома из URL
+ * @param messages - сообщения с бэка
+ * @param subtitle - подзаголовок (адрес)
+ * @param currentUserName - имя текущего пользователя
  */
-export function resolveHouseChat(houseId: string): ChatMock {
+export function resolveHouseChat(
+	houseId: string,
+	messages: HouseMessage[],
+	subtitle?: string,
+	currentUserName?: string | null,
+): ChatMock {
 	return {
 		...CONVERSATION_CHAT_MOCK,
 		id: houseId,
+		subtitle: subtitle ?? CONVERSATION_CHAT_MOCK.subtitle,
+		messages: messages.map((message) => toChatMessage(message, currentUserName)),
 	};
 }
 

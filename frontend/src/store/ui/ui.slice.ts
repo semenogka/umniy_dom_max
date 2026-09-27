@@ -3,10 +3,13 @@ import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 type UiState = {
 	/** Глобальный Loader */
 	isLoading: boolean;
+	/** Число активных загрузок */
+	loadingCount: number;
 };
 
 const initialState: UiState = {
 	isLoading: false,
+	loadingCount: 0,
 };
 
 const uiSlice = createSlice({
@@ -14,13 +17,22 @@ const uiSlice = createSlice({
 	initialState,
 	reducers: {
 		showLoader(state) {
+			state.loadingCount += 1;
 			state.isLoading = true;
 		},
 		hideLoader(state) {
-			state.isLoading = false;
+			state.loadingCount = Math.max(0, state.loadingCount - 1);
+			state.isLoading = state.loadingCount > 0;
 		},
 		setLoading(state, action: PayloadAction<boolean>) {
-			state.isLoading = action.payload;
+			if (action.payload) {
+				state.loadingCount += 1;
+				state.isLoading = true;
+				return;
+			}
+
+			state.loadingCount = Math.max(0, state.loadingCount - 1);
+			state.isLoading = state.loadingCount > 0;
 		},
 	},
 });

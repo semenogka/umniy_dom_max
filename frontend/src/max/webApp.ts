@@ -12,3 +12,16 @@ export function getMaxUserId(): number | null {
 
 	return null;
 }
+
+/**
+ * Имя пользователя MAX
+ *
+ * @returns {string | null} Имя пользователя MAX
+ */
+export function getMaxUserName(): string | null {
+	const user = window.WebApp?.initDataUnsafe?.user;
+
+	if (user?.first_name) return user.first_name;
+
+	return null;
+}
