@@ -7,5 +7,5 @@ import { apiGet } from "./client";
  * @param houseId - id дома
  */
 export function fetchHouseAppeals(houseId: number): Promise<Appeal[]> {
-	return apiGet<Appeal[]>(`/appeals/${houseId}`);
+	return apiGet<Appeal[]>(`/houses/${houseId}/appeals`);
 }

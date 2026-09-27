@@ -18,6 +18,7 @@
 	},
 	"dependencies": {
 		"@reduxjs/toolkit": "^2.12.0",
+		"date-fns": "^4.4.0",
 		"react": "^19.2.8",
 		"react-dom": "^19.2.8",
 		"react-redux": "^9.3.0",

@@ -1,7 +1,6 @@
 import { Button } from "@/components/Button";
 import { Icon } from "@/components/Icon";
 import { STATUS_META } from "@/components/Status/Status.config";
-import { CONVERSATION_CHAT_MOCK } from "../../Chat.mock";
 import {
 	CHAT_SIDEBAR_RESIDENTS_META,
 	CHAT_SIDEBAR_SUPPORT_META,
@@ -18,17 +17,18 @@ import type { ChatSidebarProps } from "./ChatSidebar.types";
 /** Содержимое боковой панели чатов */
 export function ChatSidebar(props: ChatSidebarProps) {
 	const {
-		activeChatId,
+		activeAppealId,
 		houseAddress,
 		houseMeta,
 		appeals,
-		onSelectChat,
+		onSelectResidents,
+		onSelectAppeal,
 		onNewAppeal,
 		onSelectHouse,
 		onClose,
 		className,
 	} = props;
-	const residentsActive = activeChatId === CONVERSATION_CHAT_MOCK.id;
+	const residentsActive = !activeAppealId;
 
 	return (
 		<div className={getChatSidebarClassName(styles, className)}>
@@ -74,7 +74,7 @@ export function ChatSidebar(props: ChatSidebarProps) {
 						.join(" ")}
 					aria-current={residentsActive ? "page" : undefined}
 					aria-label={`Чат жителей дома, ${CHAT_SIDEBAR_RESIDENTS_META}`}
-					onClick={() => onSelectChat?.(CONVERSATION_CHAT_MOCK.id)}
+					onClick={onSelectResidents}
 				>
 					<span className={styles.residentsIcon} aria-hidden>
 						<Icon name="residents" size="lg" />
@@ -92,7 +92,7 @@ export function ChatSidebar(props: ChatSidebarProps) {
 
 			<nav className={styles.list} aria-label="Обращения">
 				{appeals.map((appeal) => {
-					const active = appeal.id === activeChatId;
+					const active = appeal.id === activeAppealId;
 					const icon = STATUS_META[appeal.status].icon;
 
 					return (
@@ -101,7 +101,7 @@ export function ChatSidebar(props: ChatSidebarProps) {
 							type="button"
 							className={getChatSidebarItemClassName(styles, active)}
 							aria-current={active ? "page" : undefined}
-							onClick={() => onSelectChat?.(appeal.id)}
+							onClick={() => onSelectAppeal?.(appeal.id)}
 						>
 							<span
 								className={getChatSidebarStatusIconClassName(styles, appeal.status)}

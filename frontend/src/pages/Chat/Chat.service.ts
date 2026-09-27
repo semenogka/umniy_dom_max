@@ -1,10 +1,13 @@
+import { format, isToday, isYesterday, parseISO } from "date-fns";
+import { ru } from "date-fns/locale";
+
 import { STATUS_META } from "@/components/Status/Status.config";
 import type { Appeal } from "@/store/appeals/appeals.types";
-import type { House } from "@/store/houses/houses.types";
+import type { House, HouseMessage } from "@/store/houses/houses.types";
 import { pluralizeRu } from "@/utils/pluralizeRu";
 
-import { CHAT_MOCKS, DEFAULT_CHAT_ID } from "./Chat.mock";
-import type { ChatMock, ChatSidebarAppealItem, ChatSidebarHouse } from "./Chat.types";
+import { CHAT_TODAY_LABEL, CONVERSATION_CHAT_MOCK } from "./Chat.mock";
+import type { ChatMessage, ChatMock, ChatSidebarAppealItem, ChatSidebarHouse } from "./Chat.types";
 
 /**
  * Собирает className страницы чата
@@ -16,13 +19,99 @@ export function getChatPageClassName(styles: Record<string, string>, className?:
 }
 
 /**
- * Возвращает мок чата по id
- * @param chatId - id из URL
+ * Время сообщения
+ * @param iso - ISO-дата с бэка
  */
-export function resolveChat(chatId?: string): ChatMock {
-	if (chatId && CHAT_MOCKS[chatId]) return CHAT_MOCKS[chatId];
+function formatMessageTime(iso: string): string {
+	return format(parseISO(iso), "HH:mm");
+}
 
-	return CHAT_MOCKS[DEFAULT_CHAT_ID];
+/**
+ * Подпись дня для ленты
+ * @param iso - ISO-дата с бэка
+ */
+function formatMessageDateLabel(iso: string): string {
+	const date = parseISO(iso);
+
+	if (isToday(date)) return CHAT_TODAY_LABEL;
+	if (isYesterday(date)) return "Вчера";
+
+	return format(date, "d MMMM", { locale: ru });
+}
+
+/**
+ * Сообщение API → сообщение ленты
+ * @param message - сообщение с бэка
+ * @param currentUserName - имя текущего пользователя
+ */
+export function toChatMessage(message: HouseMessage, currentUserName?: string | null): ChatMessage {
+	const isOut = Boolean(currentUserName && message.sender === currentUserName);
+
+	return {
+		id: message.clientId ?? String(message.id),
+		kind: isOut ? "out" : "bot",
+		author: isOut ? undefined : message.sender,
+		text: message.text,
+		time: formatMessageTime(message.created_at),
+		dateLabel: formatMessageDateLabel(message.created_at),
+		delivery: isOut ? (message.delivery ?? "sent") : undefined,
+	};
+}
+
+/**
+ * Чат жителей для выбранного дома
+ * @param houseId - id дома из URL
+ * @param messages - сообщения с бэка
+ * @param subtitle - подзаголовок (адрес)
+ * @param currentUserName - имя текущего пользователя
+ */
+export function resolveHouseChat(
+	houseId: string,
+	messages: HouseMessage[],
+	subtitle?: string,
+	currentUserName?: string | null,
+): ChatMock {
+	return {
+		...CONVERSATION_CHAT_MOCK,
+		id: houseId,
+		subtitle: subtitle ?? CONVERSATION_CHAT_MOCK.subtitle,
+		messages: messages.map((message) => toChatMessage(message, currentUserName)),
+	};
+}
+
+/**
+ * Чат обращения: из стора или заглушка
+ * @param appealId - id обращения из URL
+ * @param appeals - список обращений дома
+ */
+export function resolveAppealChat(appealId: string, appeals: Appeal[]): ChatMock {
+	const appeal = appeals.find((item) => String(item.id) === appealId);
+
+	if (!appeal) {
+		return {
+			id: appealId,
+			type: "appeal",
+			headerType: "appeal",
+			title: `Обращение №${appealId}`,
+			subtitle: "В работе",
+			status: "in_progress",
+			number: appealId,
+			messages: [],
+		};
+	}
+
+	const title = appeal.problem_type?.trim() || appeal.text.trim() || `Обращение №${appeal.id}`;
+
+	return {
+		id: String(appeal.id),
+		type: "appeal",
+		headerType: "appeal",
+		title,
+		subtitle: STATUS_META[appeal.status].label,
+		status: appeal.status,
+		number: String(appeal.id),
+		messages: [],
+	};
 }
 
 /**
