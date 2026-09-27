@@ -27,8 +27,15 @@ router = fastapi.APIRouter()
 settings = Settings()
 mail = Mail(settings.mail_host, settings.mail_user, settings.mail_password)
 
-# мок авторизации юзера
-@router.post("/users/demo", response_model=UserOut)
+status = {
+    "dop": "дополните",
+    "checked": "проверено",
+    "close": "закрыто"
+}
+
+@router.post("/users/demo", response_model=UserOut, tags=["Пользователи"],
+             summary="Создать демо-пользователя",
+             description="Создаёт демо-пользователя со случайными домами, если он ещё не существует. Возвращает данные пользователя.")
 async def demo_create_user(data: DemoUserIn, db: DbSession):
     user = await repository.get_user_full(db, data.user_id)
     if user:
@@ -43,8 +50,10 @@ async def demo_create_user(data: DemoUserIn, db: DbSession):
     )
 
 
-# создает обращение
-@router.post("/appeals/create", response_model=AppealDetailedOut)
+@router.post("/appeals/create", response_model=AppealDetailedOut, tags=["Обращения"],
+             summary="Создать обращение",
+             description="Создаёт новое обращение жителя. Классифицирует текст через LLM, отправляет уведомление на email. "
+                         "Возвращает детальную информацию об обращении.")
 async def create_appeal(
     data: AppealIn,
     db: DbSession,
@@ -98,8 +107,9 @@ async def create_appeal(
     )
 
 
-# обновить статус обращения
-@router.patch("/appeals/{appeal_id}/update", response_model=AppealOut)
+@router.patch("/appeals/{appeal_id}/update", response_model=AppealOut, tags=["Обращения"],
+             summary="Обновить статус обращения",
+             description="Изменяет статус обращения. При изменении статуса отправляет уведомление в чат MAX и на email.")
 async def update_appeal_status(
     appeal_id: int,
     data: StatusIn,
@@ -111,11 +121,14 @@ async def update_appeal_status(
         raise HTTPException(404, "Not found")
     old_status = appeal.status
     changed = old_status != data.status
+    msg = f"Статус по {appeal_id} изменён: {status[old_status]} → {status[data.status]}."
+    if data.status != "close":
+        msg += f"Посмотрите ответ по вашему обращению: {data.mail_text}"
     await repository.set_appeal_status(
         db,
         appeal,
         data.status,
-        f"Статус изменён: {old_status} → {data.status}" if changed else None,
+        msg if changed else None,
     )
     # уведа в чат
     if changed:
@@ -128,7 +141,7 @@ async def update_appeal_status(
                 params={"chat_id": chat_id},
                 headers={"Authorization": settings.max_token},
                 json={
-                    "text": f"Статус обращения №{appeal.id} изменён на {data.status}"
+                    "text": f"Статус обращения №{appeal.id} изменён на {status[data.status]}. {data.bot_text}"
                 },
                 timeout=5,
             )
@@ -138,14 +151,9 @@ async def update_appeal_status(
     return appeal
 
 
-# получаем все обращения с дома.
-@router.get("/appeals/{house_id}", response_model=list[AppealOut])
-async def list_address_by_house_id(house_id: int, db: DbSession):
-    return await repository.list_appeals_by_house_id(db, house_id)
-
-
-# получаем обращение по id
-@router.get("/appeals/{appeal_id}", response_model=AppealDetailedOut)
+@router.get("/appeals/{appeal_id}", response_model=AppealDetailedOut, tags=["Обращения"],
+             summary="Получить обращение по ID",
+             description="Возвращает детальную информацию об обращении по его ID, включая сообщения.")
 async def get_appeal(appeal_id: int, db: DbSession):
     appeal = await repository.get_appeal_detailed(db, appeal_id)
     if not appeal:
@@ -153,8 +161,20 @@ async def get_appeal(appeal_id: int, db: DbSession):
     return appeal
 
 
-# отправляем сообщение в обращение.
-@router.post("/appeals/{appeal_id}/message", response_model=MessageOut)
+@router.get("/houses/{house_id}/appeals", response_model=list[AppealOut], tags=["Обращения"],
+             summary="Список обращений по дому",
+             description="Возвращает список всех обращений, связанных с указанным домом.")
+async def list_appeals_by_house_id(house_id: int, db: DbSession):
+    house = await repository.get_house(db, house_id)
+    if not house:
+        raise HTTPException(404, "House not found")
+    return await repository.list_appeals_by_house_id(db, house_id)
+
+
+@router.post("/appeals/{appeal_id}/message", response_model=MessageOut, tags=["Обращения"],
+             summary="Отправить сообщение в обращение",
+             description="Отправляет дополнительное сообщение в существующее обращение. "
+                         "Текст проходит классификацию через LLM, результат отправляется на email.")
 async def send_message_appeal(
     appeal_id: int,
     data: MessageIn,
@@ -165,7 +185,8 @@ async def send_message_appeal(
 
     if not appeal:
         raise HTTPException(404, "Обращение не найдено")
-
+    if not appeal.status == "close":
+        raise HTTPException(400, "Обращение закрыто")
     user = await repository.get_user(db, data.user_id)
 
     if not user:
@@ -206,7 +227,7 @@ async def send_message_appeal(
             for i, b64 in enumerate(data.attachments)
         ],
     )
-
+    
     return await repository.add_appeal_message(
         db,
         appeal.id,
@@ -217,8 +238,9 @@ async def send_message_appeal(
     )
     
 
-# получаем все дома юзера
-@router.get("/users/{user_id}/houses", response_model=list[HouseOut])
+@router.get("/users/{user_id}/houses", response_model=list[HouseOut], tags=["Пользователи"],
+             summary="Список домов пользователя",
+             description="Возвращает список домов, привязанных к указанному пользователю.")
 async def list_user_houses(user_id: int, db: DbSession):
     user = await repository.get_user_with_houses(db, user_id)
     if not user:
@@ -226,8 +248,9 @@ async def list_user_houses(user_id: int, db: DbSession):
     return user.houses
 
 
-# информация о юзере
-@router.get("/users/{user_id}", response_model=UserOut)
+@router.get("/users/{user_id}", response_model=UserOut, tags=["Пользователи"],
+             summary="Информация о пользователе",
+             description="Возвращает полную информацию о пользователе, включая привязанные дома и историю обращений.")
 async def get_user_info(user_id: int, db: DbSession):
     user = await repository.get_user_full(db, user_id)
     if not user:
@@ -235,34 +258,39 @@ async def get_user_info(user_id: int, db: DbSession):
     return user
 
 
-# получаем все обращения пользователя с сообщениями
-@router.get("/users/{user_id}/appeals", response_model=list[AppealDetailedOut])
+@router.get("/users/{user_id}/appeals", response_model=list[AppealDetailedOut], tags=["Пользователи"],
+             summary="Все обращения пользователя (детально)",
+             description="Возвращает список всех обращений пользователя с детальной информацией, включая сообщения.")
 async def list_user_appeals(user_id: int, db: DbSession):
     return await repository.list_user_appeals(db, user_id, with_messages=True)
 
 
-# получаем все обращения пользователя кратко
-@router.get("/users/{user_id}/appeals/short", response_model=list[AppealOut])
+@router.get("/users/{user_id}/appeals/short", response_model=list[AppealOut], tags=["Пользователи"],
+             summary="Все обращения пользователя (кратко)",
+             description="Возвращает краткий список обращений пользователя без детальной информации о сообщениях.")
 async def list_user_appeals_short(user_id: int, db: DbSession):
     return await repository.list_user_appeals(db, user_id)
 
 
-# добавить дом
-@router.post("/houses", response_model=HouseOut)
+@router.post("/houses", response_model=HouseOut, tags=["Дома"],
+             summary="Добавить дом",
+             description="Добавляет новый дом в базу данных. Возвращает 400, если дом с таким адресом уже существует.")
 async def add_house(data: AddressIn, db: DbSession):
     if await repository.get_house_by_address(db, data.address):
         raise HTTPException(400, "House already exists")
     return await repository.create_house(db, data.address)
 
 
-# посмотреть все дома
-@router.get("/houses", response_model=list[HouseOut])
+@router.get("/houses", response_model=list[HouseOut], tags=["Дома"],
+             summary="Список всех домов",
+             description="Возвращает список всех домов в базе данных.")
 async def list_houses(db: DbSession):
     return await repository.list_houses(db)
 
 
-# получаем информацию о доме с сообщениями
-@router.get("/houses/{house_id}/messages", response_model=HouseDetailOut)
+@router.get("/houses/{house_id}/messages", response_model=HouseDetailOut, tags=["Дома"],
+             summary="Информация о доме с сообщениями",
+             description="Возвращает детальную информацию о доме, включая историю сообщений общего чата.")
 async def get_house_info(house_id: int, db: DbSession):
     house = await repository.get_house_detailed(db, house_id)
     if not house:
@@ -270,8 +298,9 @@ async def get_house_info(house_id: int, db: DbSession):
     return house
 
 
-# отправка сообщений в дом
-@router.post("/houses/{house_id}/message", response_model=MessageOut)
+@router.post("/houses/{house_id}/message", response_model=MessageOut, tags=["Дома"],
+             summary="Отправить сообщение в общий чат дома",
+             description="Отправляет сообщение пользователя в общий чат дома (не связано с конкретным обращением).")
 async def send_message(house_id: int, data: MessageIn, db: DbSession):
     house = await repository.get_house(db, house_id)
     user = await repository.get_user(db, data.user_id)

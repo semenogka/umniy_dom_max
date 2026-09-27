@@ -16,6 +16,7 @@ class AppealIn(BaseModel):
 
 class StatusIn(BaseModel):
     status: str
+    mail_text: str
 
 
 class AddressIn(BaseModel):

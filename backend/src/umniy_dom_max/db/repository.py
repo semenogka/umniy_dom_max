@@ -51,9 +51,13 @@ async def create_user(
 # обращения
 
 
-async def get_appeal(db: AsyncSession, appeal_id: int) -> Appeal | None:
+async def get_appeal(db: AsyncSession, appeal_id: str) -> Appeal | None:
     return await db.get(Appeal, appeal_id)
 
+async def get_appeal_by_mail_subject(db: AsyncSession, mail_subject: int) -> Appeal | None:
+    return await db.scalar(
+        select(Appeal).where(Appeal.mail_subject == mail_subject)
+    )
 
 async def get_appeal_detailed(db: AsyncSession, appeal_id: int) -> Appeal | None:
     return await db.scalar(
@@ -125,7 +129,7 @@ async def set_appeal_status(
 ) -> None:
     appeal.status = status
     if system_text:
-        db.add(AppealMessage(appeal_id=appeal.id, sender="system", text=system_text))
+        db.add(AppealMessage(appeal_id=appeal.id, sender="bot", text=system_text))
     await db.commit()
 
 
@@ -214,3 +218,8 @@ async def add_house_message(
         .options(selectinload(HouseMessage.attachments))
     )
     return await db.scalar(query)
+
+
+async def get_appeal_by_mail_subject(db: AsyncSession, subject: str) -> Appeal | None:
+    """Находит обращение по теме письма (mail_subject)."""
+    return await db.scalar(select(Appeal).where(Appeal.mail_subject == subject))
