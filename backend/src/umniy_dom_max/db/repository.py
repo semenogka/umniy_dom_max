@@ -118,8 +118,8 @@ async def create_appeal(
     )
     db.add(appeal)
     await db.flush()
-    await _add_appeal_message(db, appeal.id, user_name, text, attachments)
-    await _add_appeal_message(db, appeal.id, "bot", bot_text)
+    await _add_appeal_message(db, appeal.id, author_id, user_name, text, attachments)
+    await _add_appeal_message(db, appeal.id, 0, "bot", bot_text)
     await db.commit()
     return await get_appeal_detailed(db, appeal.id)
 
@@ -136,16 +136,17 @@ async def set_appeal_status(
 async def add_appeal_message(
     db: AsyncSession,
     appeal_id: int,
+    sender_id: int,
     sender: str,
     text: str,
     attachments: list[str],
     bot_text: str,
 ) -> AppealMessage:
     msg = await _add_appeal_message(
-        db, appeal_id, sender, text, attachments
+        db, appeal_id, sender_id, sender, text, attachments
     )
     if bot_text:
-        await _add_appeal_message(db, appeal_id, "bot", bot_text)
+        await _add_appeal_message(db, appeal_id, 0, "bot", bot_text)
     await db.commit()
     query = select(AppealMessage).where(AppealMessage.id == msg.id).options(selectinload(AppealMessage.attachments))
     return await db.scalar(query)
@@ -153,11 +154,12 @@ async def add_appeal_message(
 async def _add_appeal_message(
     db: AsyncSession,
     appeal_id: int,
+    sender_id: int,
     sender: str,
     text: str,
     attachments: Sequence[str] = (),
 ) -> AppealMessage:
-    msg = AppealMessage(appeal_id=appeal_id, sender=sender, text=text)
+    msg = AppealMessage(appeal_id=appeal_id, sender_id=sender_id, sender=sender, text=text)
     db.add(msg)
     await db.flush()
     
@@ -202,9 +204,9 @@ async def create_house(db: AsyncSession, address: str) -> House:
 
 
 async def add_house_message(
-    db: AsyncSession, house_id: int, sender: str, text: str, attachments: list[str]
+    db: AsyncSession, house_id: int, sender_id: int, sender: str, text: str, attachments: list[str]
 ) -> HouseMessage:
-    msg = HouseMessage(house_id=house_id, sender=sender, text=text)
+    msg = HouseMessage(house_id=house_id, sender_id=sender_id, sender=sender, text=text)
     db.add(msg)
     await db.flush()
     db.add_all(

@@ -19,6 +19,7 @@ class AppealMessage(Base):
     __tablename__ = "appeal_messages"
     id = Column(Integer, primary_key=True)
     appeal_id = Column(ForeignKey("appeals.id"), index=True, nullable=False)
+    sender_id = Column(ForeignKey("users.id"), index=True, nullable=False)
     sender = Column(String)
     text = Column(Text, nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
@@ -38,6 +39,7 @@ class HouseMessage(Base):
     __tablename__ = "house_messages"
     id = Column(Integer, primary_key=True)
     house_id = Column(ForeignKey("houses.id"), index=True, nullable=False)
+    sender_id = Column(ForeignKey("users.id"), index=True, nullable=False)
     sender = Column(String)
     text = Column(Text, nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())

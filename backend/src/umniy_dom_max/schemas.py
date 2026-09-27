@@ -32,6 +32,7 @@ class MessageOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: int
+    sender_id: int
     sender: str
     text: str
     created_at: datetime

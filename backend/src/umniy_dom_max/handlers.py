@@ -186,21 +186,23 @@ async def send_message_appeal(
 
     if not appeal:
         raise HTTPException(404, "Обращение не найдено")
-    if not appeal.status == "close":
-        return await repository.add_appeal_message(
-                db,
-                appeal.id,
-                sender,
-                data.text,
-                data.attachments,
-                bot_text="Данное обращение уже закрыто.",
-            )
-    user = await repository.get_user(db, data.user_id)
 
+    user = await repository.get_user(db, data.user_id)
     if not user:
         raise HTTPException(404, "Пользователь не найден")
 
     sender = user.name
+
+    if appeal.status == "close":
+        return await repository.add_appeal_message(
+            db,
+            appeal.id,
+            data.user_id,
+            sender,
+            data.text,
+            data.attachments,
+            bot_text="Данное обращение уже закрыто.",
+        )
 
     classification = (await agent.run(data.text)).output
 
@@ -208,6 +210,7 @@ async def send_message_appeal(
         return await repository.add_appeal_message(
             db,
             appeal.id,
+            data.user_id,
             sender,
             data.text,
             data.attachments,
@@ -239,6 +242,7 @@ async def send_message_appeal(
     return await repository.add_appeal_message(
         db,
         appeal.id,
+        data.user_id,
         sender,
         data.text,
         data.attachments,
@@ -318,5 +322,5 @@ async def send_message(house_id: int, data: MessageIn, db: DbSession):
     if not house:
         raise HTTPException(404, "Not found")
     return await repository.add_house_message(
-        db, house.id, sender, data.text, data.attachments
+        db, house.id, data.user_id, sender, data.text, data.attachments
     )

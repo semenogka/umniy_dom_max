@@ -64,13 +64,24 @@ def main():
             update_type = update.get("update_type")
 
             if update_type == "bot_started":
-                user_id = (update.get("user") or {}).get("user_id")
-                name = update.get("user").get("first_name")
+                user = update.get("user") or {}
+                user_id = user.get("user_id")
+                name = user.get("first_name")
+                chat_id = (
+                    chat_id
+                    or update.get("chat_id")
+                    or user.get("chat_id")
+                )
+
+                if not chat_id or not user_id or not name:
+                    logger.warning(f"bot_started: не хватает данных — {update}")
+                    continue
 
                 data = DemoUserIn(user_id=user_id, chat_id=chat_id, name=name)
-                requests.post(
-                    "https://domovoy.stirkk.ru/users/demo", json=data.model_dump()
+                status = requests.post(
+                    "http://localhost:8000/users/demo", json=data.model_dump()
                 )
+                print(status.status_code, data)
                 send_msg(
                     chat_id,
                     "Вы успешно зарегестрировались в Домовой! Перейдите в мини приложение, чтобы",
