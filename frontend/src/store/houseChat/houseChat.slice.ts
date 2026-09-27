@@ -1,10 +1,12 @@
-import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
+import { createAsyncThunk, createSlice, type PayloadAction } from "@reduxjs/toolkit";
 
 import {
 	fetchHouseMessages as fetchHouseMessagesRequest,
 	sendHouseMessage as sendHouseMessageRequest,
 } from "@/api/houses";
 import { getMaxUserId } from "@/max/webApp";
+import { upsertServerMessage, withDelivery } from "@/store/chatMessage";
+import type { HouseMessage } from "@/store/houses/houses.types";
 import { hideLoader, showLoader } from "@/store/ui/ui.slice";
 
 import type { HouseChatState } from "./houseChat.types";
@@ -91,6 +93,22 @@ const houseChatSlice = createSlice({
 		clearHouseChat() {
 			return initialState;
 		},
+		/** Сообщение из WebSocket */
+		houseMessageReceived(state, action: PayloadAction<HouseMessage>) {
+			upsertServerMessage(state.messages, action.payload);
+		},
+		/** Прочтение из WebSocket */
+		houseMessagesRead(state, action: PayloadAction<number[]>) {
+			const ids = new Set(action.payload);
+
+			for (const message of state.messages) {
+				if (!ids.has(message.id)) continue;
+				message.is_read = true;
+				if (message.delivery && message.delivery !== "error" && message.delivery !== "pending") {
+					message.delivery = "read";
+				}
+			}
+		},
 	},
 	extraReducers: (builder) => {
 		builder
@@ -109,10 +127,7 @@ const houseChatSlice = createSlice({
 				state.status = "succeeded";
 				state.houseId = action.payload.houseId;
 				state.loadingHouseId = null;
-				state.messages = action.payload.messages.map((message) => ({
-					...message,
-					delivery: "sent" as const,
-				}));
+				state.messages = action.payload.messages.map(withDelivery);
 				state.error = null;
 			})
 			/** Ошибка загрузки сообщений */
@@ -144,6 +159,7 @@ const houseChatSlice = createSlice({
 					sender: senderName,
 					text,
 					created_at: new Date().toISOString(),
+					is_read: false,
 					attachments: attachments.map((url, index) => ({
 						id: index,
 						url,
@@ -156,16 +172,7 @@ const houseChatSlice = createSlice({
 			/** Бэк сохранил сообщение — обновляем pending */
 			.addCase(sendHouseMessage.fulfilled, (state, action) => {
 				const { clientId, message } = action.payload;
-				const index = state.messages.findIndex((item) => item.clientId === clientId);
-
-				const nextMessage = {
-					...message,
-					clientId,
-					delivery: "sent" as const,
-				};
-
-				if (index >= 0) state.messages[index] = nextMessage;
-				else state.messages.push(nextMessage);
+				upsertServerMessage(state.messages, message, clientId);
 			})
 			/** Ошибка отправки — помечаем pending */
 			.addCase(sendHouseMessage.rejected, (state, action) => {
@@ -180,5 +187,5 @@ const houseChatSlice = createSlice({
 	},
 });
 
-export const { clearHouseChat } = houseChatSlice.actions;
+export const { clearHouseChat, houseMessageReceived, houseMessagesRead } = houseChatSlice.actions;
 export const houseChatReducer = houseChatSlice.reducer;

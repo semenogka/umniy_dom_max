@@ -17,8 +17,10 @@ export type ChatAttachment = {
 
 /** Сообщение в ленте */
 export type ChatMessage = {
-	/** Идентификатор */
+	/** Идентификатор UI (clientId или id) */
 	id: string;
+	/** Id сообщения на бэке */
+	serverId: number;
 	/** Вид сообщения */
 	kind: MessageKind;
 	/** Автор */

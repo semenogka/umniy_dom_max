@@ -1,14 +1,15 @@
 import asyncio
+import json
 
 import fastapi
 import requests
-from fastapi import HTTPException
+from fastapi import HTTPException, WebSocket, WebSocketDisconnect
 from loguru import logger
 from datetime import datetime
 from umniy_dom_max.mail import Mail
 from umniy_dom_max.db import repository
 from umniy_dom_max.settings import Settings
-from umniy_dom_max.dependencies import AppealAgentDep, DbSession, SettingsDep
+from umniy_dom_max.dependencies import AppealAgentDep, DbSession, SettingsDep, WsManagerDep
 from umniy_dom_max import html as html_templates
 from umniy_dom_max.schemas import (
     AddressIn,
@@ -23,6 +24,7 @@ from umniy_dom_max.schemas import (
     StatusIn,
     UserOut,
 )
+from umniy_dom_max.ws import appeal_room, house_room
 router = fastapi.APIRouter()
 settings = Settings()
 mail = Mail(settings.mail_host, settings.mail_user, settings.mail_password)
@@ -188,6 +190,7 @@ async def send_message_appeal(
     data: MessageIn,
     db: DbSession,
     agent: AppealAgentDep,
+    ws: WsManagerDep,
 ):
     appeal = await repository.get_appeal_detailed(db, appeal_id)
 
@@ -201,7 +204,7 @@ async def send_message_appeal(
     sender = user.name
 
     if appeal.status == "close":
-        return await repository.add_appeal_message(
+        message = await repository.add_appeal_message(
             db,
             appeal.id,
             data.user_id,
@@ -210,11 +213,16 @@ async def send_message_appeal(
             data.attachments,
             bot_text="Данное обращение уже закрыто.",
         )
+        await ws.broadcast(
+            appeal_room(appeal.id),
+            {"type": "message", "data": MessageOut.model_validate(message).model_dump(mode="json")},
+        )
+        return message
 
     classification = (await agent.run(data.text)).output
 
     if classification.problem_type == "другая":
-        return await repository.add_appeal_message(
+        message = await repository.add_appeal_message(
             db,
             appeal.id,
             data.user_id,
@@ -223,6 +231,11 @@ async def send_message_appeal(
             data.attachments,
             bot_text="Это не является дополнением к обращению.",
         )
+        await ws.broadcast(
+            appeal_room(appeal.id),
+            {"type": "message", "data": MessageOut.model_validate(message).model_dump(mode="json")},
+        )
+        return message
 
     print(classification.problem_type)
 
@@ -245,8 +258,8 @@ async def send_message_appeal(
             for i, b64 in enumerate(data.attachments)
         ],
     )
-    
-    return await repository.add_appeal_message(
+
+    message = await repository.add_appeal_message(
         db,
         appeal.id,
         data.user_id,
@@ -255,7 +268,11 @@ async def send_message_appeal(
         data.attachments,
         bot_text="Мы приняли дополнительные данные и передали их уполномоченной компании.",
     )
-    
+    await ws.broadcast(
+        appeal_room(appeal.id),
+        {"type": "message", "data": MessageOut.model_validate(message).model_dump(mode="json")},
+    )
+    return message
 
 @router.get("/users/{user_id}/houses", response_model=list[HouseOut], tags=["Пользователи"],
              summary="Список домов пользователя",
@@ -320,7 +337,7 @@ async def get_house_info(house_id: int, db: DbSession):
 @router.post("/houses/{house_id}/message", response_model=MessageOut, tags=["Дома"],
              summary="Отправить сообщение в общий чат дома",
              description="Отправляет сообщение пользователя в общий чат дома (не связано с конкретным обращением).")
-async def send_message(house_id: int, data: MessageIn, db: DbSession):
+async def send_message(house_id: int, data: MessageIn, db: DbSession, ws: WsManagerDep):
     house = await repository.get_house(db, house_id)
     user = await repository.get_user(db, data.user_id)
     if not user:
@@ -328,6 +345,82 @@ async def send_message(house_id: int, data: MessageIn, db: DbSession):
     sender = user.name
     if not house:
         raise HTTPException(404, "Not found")
-    return await repository.add_house_message(
+    message = await repository.add_house_message(
         db, house.id, data.user_id, sender, data.text, data.attachments
+    )
+    await ws.broadcast(
+        house_room(house.id),
+        {"type": "message", "data": MessageOut.model_validate(message).model_dump(mode="json")},
+    )
+    return message
+
+
+async def _chat_ws(
+    websocket: WebSocket,
+    room: str,
+    user_id: int,
+    mark_read,
+):
+    manager = websocket.app.state.ws_manager
+    await manager.connect(room, websocket)
+
+    try:
+        while True:
+            raw = await websocket.receive_text()
+            try:
+                payload = json.loads(raw)
+            except json.JSONDecodeError:
+                continue
+
+            if payload.get("type") != "read":
+                continue
+
+            message_ids = payload.get("message_ids")
+            if not isinstance(message_ids, list):
+                continue
+
+            ids = [int(item) for item in message_ids if isinstance(item, int) or str(item).isdigit()]
+            if not ids:
+                continue
+
+            async with websocket.app.state.sessionmaker() as db:
+                updated = await mark_read(db, user_id, ids)
+
+            if updated:
+                await manager.broadcast(room, {"type": "read", "message_ids": updated})
+    except WebSocketDisconnect:
+        pass
+    finally:
+        manager.disconnect(room, websocket)
+
+
+@router.websocket("/ws/houses/{house_id}")
+async def house_chat_ws(
+    websocket: WebSocket,
+    house_id: int,
+    user_id: int,
+):
+    await _chat_ws(
+        websocket,
+        house_room(house_id),
+        user_id,
+        lambda db, reader_id, ids: repository.mark_house_messages_read(
+            db, house_id, reader_id, ids
+        ),
+    )
+
+
+@router.websocket("/ws/appeals/{appeal_id}")
+async def appeal_chat_ws(
+    websocket: WebSocket,
+    appeal_id: int,
+    user_id: int,
+):
+    await _chat_ws(
+        websocket,
+        appeal_room(appeal_id),
+        user_id,
+        lambda db, reader_id, ids: repository.mark_appeal_messages_read(
+            db, appeal_id, reader_id, ids
+        ),
     )

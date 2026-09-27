@@ -2,7 +2,7 @@
  * Базовый URL API из `VITE_API_URL`
  * @example http://localhost:8000
  */
-const API_BASE_URL = (import.meta.env.VITE_API_URL ?? "").replace(/\/$/, "");
+export const API_BASE_URL = (import.meta.env.VITE_API_URL ?? "").replace(/\/$/, "");
 
 /**
  * Разбор ошибки ответа API

@@ -33,6 +33,8 @@ export type HouseMessage = {
 	text: string;
 	/** Дата создания */
 	created_at: string;
+	/** Прочитано кем-то кроме отправителя */
+	is_read?: boolean;
 	/** Вложения */
 	attachments: MessageAttachment[];
 	/** Локальный id сообщения */

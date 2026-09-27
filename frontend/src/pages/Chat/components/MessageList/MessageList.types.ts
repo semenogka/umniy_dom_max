@@ -4,6 +4,8 @@ import type { Chat, ChatMessage } from "../../Chat.types";
 export type MessageListProps = {
 	/** Данные чата */
 	chat: Chat;
+	/** Чужие сообщения попали в viewport */
+	onIncomingVisible?: (messageIds: number[]) => void;
 };
 
 /** Группа сообщений за один день */
@@ -32,4 +34,6 @@ export type SenderGroupProps = {
 	group: MessageListSenderGroup;
 	/** Открыть вложение в лайтбоксе */
 	onOpenAttachment?: (url: string) => void;
+	/** Ref-колбэк для бабла (viewport read) */
+	onBubbleRef?: (message: ChatMessage, node: HTMLElement | null) => void;
 };

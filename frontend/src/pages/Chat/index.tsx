@@ -11,6 +11,7 @@ import { fetchUserHouses, selectHouse } from "@/store/houses/houses.slice";
 import type { House } from "@/store/houses/houses.types";
 import { initCurrentUser } from "@/store/user/user.slice";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
+import { useChatSocket } from "@/hooks/useChatSocket";
 
 import styles from "./Chat.module.scss";
 import {
@@ -95,6 +96,17 @@ export function ChatPage() {
 
 	const houseId = houseIdParam ?? (selectedHouse ? String(selectedHouse.id) : undefined);
 	const isHouseChat = !appealId;
+	const socketKind = isHouseChat ? "house" : "appeal";
+	const socketChatId = isHouseChat
+		? (selectedHouse?.id ?? null)
+		: appealId && Number.isFinite(Number(appealId))
+			? Number(appealId)
+			: null;
+	const { sendRead } = useChatSocket({
+		kind: socketChatId != null ? socketKind : null,
+		chatId: socketChatId,
+		userId: currentUser?.id ?? null,
+	});
 	const visibleHouseMessages =
 		isHouseChat && houseId != null && houseChatHouseId === Number(houseId) ? houseMessages : [];
 	const visibleAppealMessages =
@@ -213,6 +225,18 @@ export function ChatPage() {
 			}
 		},
 		[appealId, currentUser, dispatch, isHouseChat, selectedHouse],
+	);
+
+	/**
+	 * Чужие сообщения в viewport — read via WS
+	 * @param messageIds - id сообщений
+	 * @returns {void}
+	 */
+	const handleIncomingVisible = useCallback(
+		(messageIds: number[]) => {
+			sendRead(messageIds);
+		},
+		[sendRead],
 	);
 
 	/**
@@ -363,7 +387,7 @@ export function ChatPage() {
 				onSummaryClick={handleOpenAppealDetails}
 			/>
 
-			<MessageList key={chat.id} chat={chat} />
+			<MessageList key={chat.id} chat={chat} onIncomingVisible={handleIncomingVisible} />
 
 			<ChatMessageInput chatId={chat.id} onSubmit={handleSubmit} />
 

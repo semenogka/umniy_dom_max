@@ -222,6 +222,51 @@ async def add_house_message(
     return await db.scalar(query)
 
 
+async def _mark_messages_read(
+    db: AsyncSession,
+    model: type[HouseMessage] | type[AppealMessage],
+    scope_column,
+    scope_id: int,
+    reader_id: int,
+    message_ids: Sequence[int],
+) -> list[int]:
+    if not message_ids:
+        return []
+
+    result = await db.scalars(
+        select(model).where(
+            scope_column == scope_id,
+            model.id.in_(list(message_ids)),
+            model.sender_id != reader_id,
+            model.is_read.is_(False),
+        )
+    )
+    messages = list(result)
+    for message in messages:
+        message.is_read = True
+
+    if messages:
+        await db.commit()
+
+    return [message.id for message in messages]
+
+
+async def mark_house_messages_read(
+    db: AsyncSession, house_id: int, reader_id: int, message_ids: Sequence[int]
+) -> list[int]:
+    return await _mark_messages_read(
+        db, HouseMessage, HouseMessage.house_id, house_id, reader_id, message_ids
+    )
+
+
+async def mark_appeal_messages_read(
+    db: AsyncSession, appeal_id: int, reader_id: int, message_ids: Sequence[int]
+) -> list[int]:
+    return await _mark_messages_read(
+        db, AppealMessage, AppealMessage.appeal_id, appeal_id, reader_id, message_ids
+    )
+
+
 async def get_appeal_by_mail_subject(db: AsyncSession, subject: str) -> Appeal | None:
     """Находит обращение по теме письма (mail_subject)."""
     return await db.scalar(select(Appeal).where(Appeal.mail_subject == subject))

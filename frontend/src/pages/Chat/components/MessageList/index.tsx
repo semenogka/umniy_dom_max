@@ -6,7 +6,7 @@ import { ImageLightbox } from "@/components/ImageLightbox";
 import { Message } from "@/components/Message";
 
 import type { ChatMessage } from "../../Chat.types";
-import { MESSAGE_LIST_DATE_IDLE_MS } from "./MessageList.config";
+import { MESSAGE_LIST_DATE_IDLE_MS, MESSAGE_LIST_READ_DEBOUNCE_MS } from "./MessageList.config";
 import styles from "./MessageList.module.scss";
 import {
 	getMessageListSenderGroupClassName,
@@ -19,7 +19,11 @@ import {
 import type { MessageListProps, SenderGroupProps } from "./MessageList.types";
 
 /** Группа сообщений одного отправителя */
-const SenderGroup = memo(function SenderGroup({ group, onOpenAttachment }: SenderGroupProps) {
+const SenderGroup = memo(function SenderGroup({
+	group,
+	onOpenAttachment,
+	onBubbleRef,
+}: SenderGroupProps) {
 	const showAvatar = !group.isOut && Boolean(group.avatarUrl);
 
 	const bubbles = (
@@ -28,44 +32,50 @@ const SenderGroup = memo(function SenderGroup({ group, onOpenAttachment }: Sende
 				const isLast = index === group.messages.length - 1;
 
 				return (
-					<Message
+					<div
 						key={message.id}
-						kind={message.kind}
-						author={index === 0 ? message.author : undefined}
-						time={message.time}
-						delivery={message.delivery}
-						tail={isLast}
-						className={styles.bubble}
+						ref={(node) => onBubbleRef?.(message, node)}
+						data-server-id={message.serverId}
+						data-kind={message.kind}
 					>
-						{message.attachments?.map((attachment, attachmentIndex) =>
-							attachment.isImage ? (
-								<button
-									key={`${message.id}:${attachmentIndex}`}
-									type="button"
-									className={styles.attachment}
-									aria-label="Открыть фото"
-									onClick={() => onOpenAttachment?.(attachment.url)}
-								>
-									<img src={attachment.url} alt={attachment.name} />
-								</button>
-							) : (
-								<a
-									key={`${message.id}:${attachmentIndex}`}
-									className={styles.file}
-									href={attachment.url}
-									download={attachment.name}
-									target="_blank"
-									rel="noreferrer"
-								>
-									<span className={styles.fileIcon} aria-hidden>
-										<Icon name="attachment" size={16} />
-									</span>
-									<span className={styles.fileName}>{attachment.name}</span>
-								</a>
-							),
-						)}
-						{message.text}
-					</Message>
+						<Message
+							kind={message.kind}
+							author={index === 0 ? message.author : undefined}
+							time={message.time}
+							delivery={message.delivery}
+							tail={isLast}
+							className={styles.bubble}
+						>
+							{message.attachments?.map((attachment, attachmentIndex) =>
+								attachment.isImage ? (
+									<button
+										key={`${message.id}:${attachmentIndex}`}
+										type="button"
+										className={styles.attachment}
+										aria-label="Открыть фото"
+										onClick={() => onOpenAttachment?.(attachment.url)}
+									>
+										<img src={attachment.url} alt={attachment.name} />
+									</button>
+								) : (
+									<a
+										key={`${message.id}:${attachmentIndex}`}
+										className={styles.file}
+										href={attachment.url}
+										download={attachment.name}
+										target="_blank"
+										rel="noreferrer"
+									>
+										<span className={styles.fileIcon} aria-hidden>
+											<Icon name="attachment" size={16} />
+										</span>
+										<span className={styles.fileName}>{attachment.name}</span>
+									</a>
+								),
+							)}
+							{message.text}
+						</Message>
+					</div>
 				);
 			})}
 		</div>
@@ -92,7 +102,10 @@ const SenderGroup = memo(function SenderGroup({ group, onOpenAttachment }: Sende
 });
 
 /** Лента сообщений */
-export const MessageList = memo(function MessageList({ chat }: MessageListProps) {
+export const MessageList = memo(function MessageList({
+	chat,
+	onIncomingVisible,
+}: MessageListProps) {
 	const [messages, setMessages] = useState<ChatMessage[]>(chat.messages);
 	const [lightboxSrc, setLightboxSrc] = useState<string | null>(null);
 	const listRef = useRef<HTMLDivElement>(null);
@@ -101,6 +114,13 @@ export const MessageList = memo(function MessageList({ chat }: MessageListProps)
 	const stickToBottomRef = useRef(true);
 	const dateIdleTimerRef = useRef<number>(0);
 	const ignoreScrollRef = useRef(false);
+	const reportedReadIdsRef = useRef<Set<number>>(new Set());
+	const pendingReadIdsRef = useRef<Set<number>>(new Set());
+	const bubbleNodesRef = useRef<Map<number, HTMLElement>>(new Map());
+	const readTimerRef = useRef<number>(0);
+	const observerRef = useRef<IntersectionObserver | null>(null);
+	const onIncomingVisibleRef = useRef(onIncomingVisible);
+	onIncomingVisibleRef.current = onIncomingVisible;
 
 	const dateGroups = useMemo(() => {
 		return groupMessagesByDate(messages).map((day) => ({
@@ -124,6 +144,70 @@ export const MessageList = memo(function MessageList({ chat }: MessageListProps)
 			window.clearTimeout(dateIdleTimerRef.current);
 		};
 	}, [chat]);
+
+	useEffect(() => {
+		reportedReadIdsRef.current = new Set();
+		pendingReadIdsRef.current = new Set();
+		bubbleNodesRef.current = new Map();
+		window.clearTimeout(readTimerRef.current);
+
+		return () => {
+			window.clearTimeout(readTimerRef.current);
+		};
+	}, [chat.id]);
+
+	useEffect(() => {
+		const root = listRef.current;
+		if (!root) return;
+
+		/**
+		 * Flush debounce read
+		 * @returns {void}
+		 */
+		const flushReads = () => {
+			const ids = [...pendingReadIdsRef.current];
+			pendingReadIdsRef.current.clear();
+			if (!ids.length) return;
+
+			for (const id of ids) reportedReadIdsRef.current.add(id);
+			onIncomingVisibleRef.current?.(ids);
+		};
+
+		const observer = new IntersectionObserver(
+			(entries) => {
+				for (const entry of entries) {
+					if (!entry.isIntersecting) continue;
+
+					const kind = (entry.target as HTMLElement).dataset.kind;
+					const serverId = Number((entry.target as HTMLElement).dataset.serverId);
+
+					if (kind === "out" || !Number.isFinite(serverId)) continue;
+					if (reportedReadIdsRef.current.has(serverId)) continue;
+
+					pendingReadIdsRef.current.add(serverId);
+				}
+
+				if (!pendingReadIdsRef.current.size) return;
+
+				window.clearTimeout(readTimerRef.current);
+				readTimerRef.current = window.setTimeout(flushReads, MESSAGE_LIST_READ_DEBOUNCE_MS);
+			},
+			{ root, threshold: 0.6 },
+		);
+
+		observerRef.current = observer;
+
+		/** Observer создаётся после mount — догоняем уже отрисованные баблы */
+		for (const node of bubbleNodesRef.current.values()) {
+			observer.observe(node);
+		}
+
+		return () => {
+			observer.disconnect();
+			observerRef.current = null;
+			window.clearTimeout(readTimerRef.current);
+		};
+	}, [chat.id]);
 
 	useLayoutEffect(() => {
 		const list = listRef.current;
@@ -178,6 +262,27 @@ export const MessageList = memo(function MessageList({ chat }: MessageListProps)
 	}, []);
 
 	/**
+	 * Наблюдать за появлением баблы для read receipts
+	 * @param message - сообщение ленты
+	 * @param node - DOM
+	 * @returns {void}
+	 */
+	const handleBubbleRef = useCallback((message: ChatMessage, node: HTMLElement | null) => {
+		const serverId = message.serverId;
+		const prev = bubbleNodesRef.current.get(serverId);
+
+		if (prev && prev !== node) {
+			observerRef.current?.unobserve(prev);
+			bubbleNodesRef.current.delete(serverId);
+		}
+
+		if (!node || message.kind === "out" || !Number.isFinite(serverId)) return;
+
+		bubbleNodesRef.current.set(serverId, node);
+		observerRef.current?.observe(node);
+	}, []);
+
+	/**
 	 * Ref-колбэк для sentinel даты
 	 * @param dateLabel - подпись дня
 	 * @param node - DOM-узел
@@ -227,6 +332,7 @@ export const MessageList = memo(function MessageList({ chat }: MessageListProps)
 								key={`${group.dateLabel}:${senderGroup.messages[0]?.id}`}
 								group={senderGroup}
 								onOpenAttachment={handleOpenAttachment}
+								onBubbleRef={handleBubbleRef}
 							/>
 						))}
 					</div>

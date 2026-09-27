@@ -98,12 +98,13 @@ export function toChatMessage(message: HouseMessage, currentUserId?: number | nu
 
 	return {
 		id: message.clientId ?? String(message.id),
+		serverId: message.id,
 		kind: isOut ? "out" : "bot",
 		author: isOut ? undefined : message.sender,
 		text: message.text,
 		time: formatMessageTime(message.created_at),
 		dateLabel: formatMessageDateLabel(message.created_at),
-		delivery: isOut ? (message.delivery ?? "sent") : undefined,
+		delivery: isOut ? (message.is_read ? "read" : (message.delivery ?? "sent")) : undefined,
 		attachments: attachments.length ? attachments : undefined,
 	};
 }

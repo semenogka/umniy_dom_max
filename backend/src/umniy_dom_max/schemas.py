@@ -36,6 +36,7 @@ class MessageOut(BaseModel):
     sender: str
     text: str
     created_at: datetime
+    is_read: bool = False
     attachments: list[AttachmentOut] = []
 
 class MessageIn(BaseModel):
