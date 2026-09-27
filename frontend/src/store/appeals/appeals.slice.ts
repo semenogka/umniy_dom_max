@@ -45,7 +45,7 @@ const appealsSlice = createSlice({
 			/** Успешная загрузка обращений */
 			.addCase(fetchHouseAppeals.fulfilled, (state, action) => {
 				state.status = "succeeded";
-				state.items = action.payload;
+				state.items = Array.isArray(action.payload) ? action.payload : [];
 				state.error = null;
 			})
 			/** Ошибка загрузки обращений */

@@ -3,7 +3,7 @@ import type { Appeal } from "@/store/appeals/appeals.types";
 import type { House } from "@/store/houses/houses.types";
 import { pluralizeRu } from "@/utils/pluralizeRu";
 
-import { CHAT_MOCKS, DEFAULT_CHAT_ID } from "./Chat.mock";
+import { CONVERSATION_CHAT_MOCK } from "./Chat.mock";
 import type { ChatMock, ChatSidebarAppealItem, ChatSidebarHouse } from "./Chat.types";
 
 /**
@@ -16,13 +16,49 @@ export function getChatPageClassName(styles: Record<string, string>, className?:
 }
 
 /**
- * Возвращает мок чата по id
- * @param chatId - id из URL
+ * Чат жителей для выбранного дома
+ * @param houseId - id дома из URL
  */
-export function resolveChat(chatId?: string): ChatMock {
-	if (chatId && CHAT_MOCKS[chatId]) return CHAT_MOCKS[chatId];
+export function resolveHouseChat(houseId: string): ChatMock {
+	return {
+		...CONVERSATION_CHAT_MOCK,
+		id: houseId,
+	};
+}
 
-	return CHAT_MOCKS[DEFAULT_CHAT_ID];
+/**
+ * Чат обращения: из стора или заглушка
+ * @param appealId - id обращения из URL
+ * @param appeals - список обращений дома
+ */
+export function resolveAppealChat(appealId: string, appeals: Appeal[]): ChatMock {
+	const appeal = appeals.find((item) => String(item.id) === appealId);
+
+	if (!appeal) {
+		return {
+			id: appealId,
+			type: "appeal",
+			headerType: "appeal",
+			title: `Обращение №${appealId}`,
+			subtitle: "В работе",
+			status: "in_progress",
+			number: appealId,
+			messages: [],
+		};
+	}
+
+	const title = appeal.problem_type?.trim() || appeal.text.trim() || `Обращение №${appeal.id}`;
+
+	return {
+		id: String(appeal.id),
+		type: "appeal",
+		headerType: "appeal",
+		title,
+		subtitle: STATUS_META[appeal.status].label,
+		status: appeal.status,
+		number: String(appeal.id),
+		messages: [],
+	};
 }
 
 /**
