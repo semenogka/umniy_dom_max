@@ -5,8 +5,9 @@ from fastapi import FastAPI
 
 from umniy_dom_max.mail import Mail
 from umniy_dom_max.settings import Settings
-from umniy_dom_max.dependencies import AnswerAgentDep
+from umniy_dom_max.dependencies import AnswerAgentDep, DbSession
 from umniy_dom_max.db.repository import get_appeal_by_mail_subject
+from umniy_dom_max.handlers import update_appeal_status
 from umniy_dom_max.schemas import StatusIn
 
 settings = Settings()
@@ -18,7 +19,7 @@ mail = Mail(
 
 
 async def check_answer(agent: AnswerAgentDep, db):
-    print("check")
+    print("check", len(mail.read()))
     for msg in mail.read():
         text = mail.get_body(msg)
         print(text)
@@ -31,7 +32,6 @@ async def check_answer(agent: AnswerAgentDep, db):
         if classification.result == "N":
             continue
         
-
         sub = msg["Subject"][4:]
         print(sub, classification.result)
         appeal = await get_appeal_by_mail_subject(db, sub)
@@ -41,11 +41,7 @@ async def check_answer(agent: AnswerAgentDep, db):
             continue
 
         try:
-            requests.patch(
-                f"https://domovoy.stirkk.ru/{appeal.id}/update",
-                json=StatusIn(status=classification.result, mail_text=text).model_dump(),
-                timeout=30,
-            )
+            update_appeal_status(appeal.id, StatusIn(status=classification.result, mail_text=text), db)
             print(f"Updated appeal {appeal.id}")
         except Exception as e:
             print(f"Update error: {e}")

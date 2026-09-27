@@ -78,9 +78,10 @@ def main():
                     continue
 
                 data = DemoUserIn(user_id=user_id, chat_id=chat_id, name=name)
-                requests.post(
-                    "https://domovoy.stirkk.ru/users/demo", json=data.model_dump()
+                status = requests.post(
+                    "http://localhost:8000/users/demo", json=data.model_dump()
                 )
+                print(status.status_code, data)
                 send_msg(
                     chat_id,
                     "Вы успешно зарегестрировались в Домовой! Перейдите в мини приложение, чтобы",
@@ -88,11 +89,48 @@ def main():
                 )
 
             elif update_type == "message_callback":
-                payload = (update.get("callback") or {}).get("payload")
+                callback = update.get("callback") or {}
+                payload = callback.get("payload")
                 if payload == "my_appeals":
-                    send_msg(
-                        chat_id, "Тут будут ваши обращения", attachment=main_attachment
-                    )
+                    user_id = (callback.get("user") or {}).get("user_id")
+                    if not user_id:
+                        logger.warning(f"my_appeals: нет user_id — {update}")
+                        continue
+
+                    try:
+                        r = requests.get(
+                            f"http://localhost:8000/users/{user_id}/appeals/short",
+                            timeout=10,
+                        )
+                        r.raise_for_status()
+                        appeals = r.json()
+                    except Exception as e:
+                        logger.error(f"Ошибка получения обращений: {e}")
+                        send_msg(chat_id, "Не удалось загрузить обращения.")
+                        continue
+
+                    if not appeals:
+                        send_msg(chat_id, "У вас пока нет обращений.")
+                        continue
+
+                    status_map = {
+                        "in_progress": "В работе",
+                        "dop": "Дополните",
+                        "checked": "Проверено",
+                        "close": "Закрыто",
+                    }
+                    lines = ["Ваши обращения:", ""]
+                    for a in appeals:
+                        status = status_map.get(a.get("status", ""), a.get("status", ""))
+                        if status != "close":
+                            lines.append(f"№{a['id']} — {status}")
+                            if a.get("problem_type"):
+                                lines.append(f"  Тип: {a['problem_type']}")
+                            if a.get("appeal_address"):
+                                lines.append(f"  Адрес: {a['appeal_address']}")
+                            lines.append("")
+
+                    send_msg(chat_id, "\n".join(lines), attachment=main_attachment)
 
 
 if __name__ == "__main__":
