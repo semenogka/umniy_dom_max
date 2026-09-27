@@ -87,7 +87,7 @@ export function ChatPage() {
 	const selectedHouse = useAppSelector((state) => state.houses.selectedHouse);
 	const appeals = useAppSelector((state) => state.appeals.items);
 	const houseMessages = useAppSelector((state) => state.houseChat.messages);
-	const ownSenderName = useAppSelector((state) => state.houseChat.ownSenderName);
+	const houseChatHouseId = useAppSelector((state) => state.houseChat.houseId);
 	const currentUser = useAppSelector((state) => state.user.current);
 
 	const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -98,17 +98,18 @@ export function ChatPage() {
 
 	const houseId = houseIdParam ?? (selectedHouse ? String(selectedHouse.id) : undefined);
 	const isHouseChat = !appealId;
-	const currentUserName = currentUser?.name ?? ownSenderName;
+	const visibleHouseMessages =
+		houseId != null && houseChatHouseId === Number(houseId) ? houseMessages : [];
 	const chat = useMemo(() => {
 		if (appealId) return resolveAppealChat(appealId, appeals);
 
 		return resolveHouseChat(
 			houseId ?? "house",
-			houseMessages,
+			visibleHouseMessages,
 			selectedHouse?.address,
-			currentUserName,
+			currentUser?.id,
 		);
-	}, [appealId, appeals, currentUserName, houseId, houseMessages, selectedHouse?.address]);
+	}, [appealId, appeals, currentUser?.id, houseId, selectedHouse?.address, visibleHouseMessages]);
 	const sidebarHouse = selectedHouse ? getChatSidebarHouse(selectedHouse, houses.length) : null;
 	const sidebarAppeals = appeals.map(toChatSidebarAppealItem);
 	const newAppealHomeContext = selectedHouse?.address;
@@ -156,13 +157,14 @@ export function ChatPage() {
 	 */
 	const handleSubmit = useCallback(
 		(text: string) => {
-			if (isHouseChat && selectedHouse) {
+			if (isHouseChat && selectedHouse && currentUser) {
 				dispatch(
 					sendHouseMessage({
 						houseId: selectedHouse.id,
 						text,
 						clientId: crypto.randomUUID(),
-						senderName: currentUserName ?? "Я",
+						senderId: currentUser.id,
+						senderName: currentUser.name,
 					}),
 				);
 				return;
@@ -170,7 +172,7 @@ export function ChatPage() {
 
 			messageListRef.current?.addMessage(text);
 		},
-		[currentUserName, dispatch, isHouseChat, selectedHouse],
+		[currentUser, dispatch, isHouseChat, selectedHouse],
 	);
 
 	/**
@@ -296,7 +298,7 @@ export function ChatPage() {
 				onSummaryClick={handleOpenAppealDetails}
 			/>
 
-			<MessageList ref={messageListRef} chat={chat} />
+			<MessageList key={chat.id} ref={messageListRef} chat={chat} />
 
 			<ChatMessageInput chatId={chat.id} onSubmit={handleSubmit} />
 

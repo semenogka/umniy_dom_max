@@ -11,8 +11,8 @@ import type { HouseChatState } from "./houseChat.types";
 
 const initialState: HouseChatState = {
 	houseId: null,
+	loadingHouseId: null,
 	messages: [],
-	ownSenderName: null,
 	status: "idle",
 	error: null,
 };
@@ -45,6 +45,8 @@ type SendHouseMessageArg = {
 	text: string;
 	/** Локальный id для оптимистичного UI */
 	clientId: string;
+	/** Id отправителя (MAX) */
+	senderId: number;
 	/** Имя отправителя для pending-бабла */
 	senderName: string;
 };
@@ -88,15 +90,20 @@ const houseChatSlice = createSlice({
 	extraReducers: (builder) => {
 		builder
 			/** Старт загрузки сообщений */
-			.addCase(fetchHouseMessages.pending, (state) => {
+			.addCase(fetchHouseMessages.pending, (state, action) => {
 				state.status = "loading";
 				state.error = null;
+				state.houseId = null;
+				state.loadingHouseId = action.meta.arg;
 				state.messages = [];
 			})
 			/** Успешная загрузка сообщений */
 			.addCase(fetchHouseMessages.fulfilled, (state, action) => {
+				if (action.meta.arg !== state.loadingHouseId) return;
+
 				state.status = "succeeded";
 				state.houseId = action.payload.houseId;
+				state.loadingHouseId = null;
 				state.messages = action.payload.messages.map((message) => ({
 					...message,
 					delivery: "sent" as const,
@@ -105,27 +112,29 @@ const houseChatSlice = createSlice({
 			})
 			/** Ошибка загрузки сообщений */
 			.addCase(fetchHouseMessages.rejected, (state, action) => {
+				if (action.meta.arg !== state.loadingHouseId) return;
+
 				state.status = "failed";
 				state.houseId = null;
+				state.loadingHouseId = null;
 				state.messages = [];
 				state.error =
 					typeof action.payload === "string" ? action.payload : "Не удалось загрузить сообщения";
 			})
 			/** Оптимистичное сообщение в pending */
 			.addCase(sendHouseMessage.pending, (state, action) => {
-				const { clientId, text, senderName } = action.meta.arg;
+				const { clientId, text, senderId, senderName } = action.meta.arg;
 
 				state.messages.push({
 					id: Date.now(),
 					clientId,
+					sender_id: senderId,
 					sender: senderName,
 					text,
 					created_at: new Date().toISOString(),
 					attachments: [],
 					delivery: "pending",
 				});
-
-				if (senderName) state.ownSenderName = senderName;
 			})
 			/** Бэк сохранил сообщение — обновляем pending */
 			.addCase(sendHouseMessage.fulfilled, (state, action) => {
@@ -140,8 +149,6 @@ const houseChatSlice = createSlice({
 
 				if (index >= 0) state.messages[index] = nextMessage;
 				else state.messages.push(nextMessage);
-
-				state.ownSenderName = message.sender;
 			})
 			/** Ошибка отправки — помечаем pending */
 			.addCase(sendHouseMessage.rejected, (state, action) => {

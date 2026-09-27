@@ -42,10 +42,10 @@ function formatMessageDateLabel(iso: string): string {
 /**
  * Сообщение API → сообщение ленты
  * @param message - сообщение с бэка
- * @param currentUserName - имя текущего пользователя
+ * @param currentUserId - id текущего пользователя MAX
  */
-export function toChatMessage(message: HouseMessage, currentUserName?: string | null): ChatMessage {
-	const isOut = Boolean(currentUserName && message.sender === currentUserName);
+export function toChatMessage(message: HouseMessage, currentUserId?: number | null): ChatMessage {
+	const isOut = currentUserId != null && message.sender_id === currentUserId;
 
 	return {
 		id: message.clientId ?? String(message.id),
@@ -63,19 +63,19 @@ export function toChatMessage(message: HouseMessage, currentUserName?: string | 
  * @param houseId - id дома из URL
  * @param messages - сообщения с бэка
  * @param subtitle - подзаголовок (адрес)
- * @param currentUserName - имя текущего пользователя
+ * @param currentUserId - id текущего пользователя MAX
  */
 export function resolveHouseChat(
 	houseId: string,
 	messages: HouseMessage[],
 	subtitle?: string,
-	currentUserName?: string | null,
+	currentUserId?: number | null,
 ): ChatMock {
 	return {
 		...CONVERSATION_CHAT_MOCK,
 		id: houseId,
 		subtitle: subtitle ?? CONVERSATION_CHAT_MOCK.subtitle,
-		messages: messages.map((message) => toChatMessage(message, currentUserName)),
+		messages: messages.map((message) => toChatMessage(message, currentUserId)),
 	};
 }
 

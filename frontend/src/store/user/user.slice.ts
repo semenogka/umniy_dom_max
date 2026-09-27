@@ -20,14 +20,13 @@ const userSlice = createSlice({
 		/** Берём id и имя из MAX WebApp */
 		initCurrentUser(state) {
 			const id = getMaxUserId();
-			const name = getMaxUserName();
 
-			if (id == null || !name) {
+			if (id == null) {
 				state.current = undefined;
 				return;
 			}
 
-			state.current = { id, name };
+			state.current = { id, name: getMaxUserName() ?? "" };
 		},
 	},
 });

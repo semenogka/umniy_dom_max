@@ -5,10 +5,10 @@ import type { RequestStatus } from "@/store/types";
 export type HouseChatState = {
 	/** Id дома, для которого загружены сообщения */
 	houseId: number | null;
+	/** Id дома, сообщения которого сейчас запрашиваем */
+	loadingHouseId: number | null;
 	/** Сообщения */
 	messages: HouseMessage[];
-	/** Имя текущего пользователя из последнего исходящего */
-	ownSenderName: string | null;
 	/** Статус загрузки / отправки */
 	status: RequestStatus;
 	/** Ошибка */

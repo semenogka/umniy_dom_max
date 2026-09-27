@@ -23,6 +23,8 @@ export type MessageAttachment = {
 export type HouseMessage = {
 	/** Идентификатор */
 	id: number;
+	/** Id отправителя (MAX / users.id) */
+	sender_id: number;
 	/** Имя отправителя */
 	sender: string;
 	/** Текст */
