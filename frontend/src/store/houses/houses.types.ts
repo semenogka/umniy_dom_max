@@ -17,12 +17,16 @@ export type MessageAttachment = {
 	url: string;
 	/** Порядок */
 	ord: number;
+	/** Локальное имя файла (optimistic) */
+	name?: string;
 };
 
 /** Сообщение чата дома */
 export type HouseMessage = {
 	/** Идентификатор */
 	id: number;
+	/** Id отправителя (MAX / users.id) */
+	sender_id: number;
 	/** Имя отправителя */
 	sender: string;
 	/** Текст */

@@ -1,10 +1,11 @@
-import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { memo, useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 
 import { Header } from "@/components/Header";
 import { MessageInput } from "@/components/MessageInput";
 import { Sidebar } from "@/components/Sidebar";
-import { fetchHouseAppeals } from "@/store/appeals/appeals.slice";
+import { fetchHouseAppeals, createAppeal } from "@/store/appeals/appeals.slice";
+import { fetchAppealMessages, sendAppealMessage } from "@/store/appealChat/appealChat.slice";
 import { fetchHouseMessages, sendHouseMessage } from "@/store/houseChat/houseChat.slice";
 import { fetchUserHouses, selectHouse } from "@/store/houses/houses.slice";
 import type { House } from "@/store/houses/houses.types";
@@ -23,8 +24,10 @@ import type { ChatHeaderProps, ChatMessageInputProps } from "./Chat.types";
 import { AppealDetailsSidebar } from "./components/AppealDetailsSidebar";
 import { ChatSidebar } from "./components/ChatSidebar";
 import { HousePickerSidebar } from "./components/HousePickerSidebar";
-import { MessageList, type MessageListHandle } from "./components/MessageList";
+import { MessageList } from "./components/MessageList";
 import { NewAppealSidebar } from "./components/NewAppealSidebar";
+import { buildAppealText } from "./components/NewAppealSidebar/NewAppealSidebar.service";
+import type { NewAppealFormValues } from "./components/NewAppealSidebar/NewAppealSidebar.types";
 
 const ChatHeader = memo(function ChatHeader({
 	chat,
@@ -62,13 +65,7 @@ const ChatMessageInput = memo(function ChatMessageInput({
 	chatId,
 	onSubmit,
 }: ChatMessageInputProps) {
-	/**
-	 * Прикрепление файла к сообщению
-	 * @returns {void}
-	 */
-	const handleAttach = useCallback(() => undefined, []);
-
-	return <MessageInput key={chatId} onSubmit={onSubmit} onAttach={handleAttach} />;
+	return <MessageInput key={chatId} onSubmit={onSubmit} />;
 });
 
 /** Страница чата */
@@ -80,14 +77,14 @@ export function ChatPage() {
 	const navigate = useNavigate();
 	const dispatch = useAppDispatch();
 
-	const messageListRef = useRef<MessageListHandle>(null);
-
 	const houses = useAppSelector((state) => state.houses.items);
 	const housesStatus = useAppSelector((state) => state.houses.status);
 	const selectedHouse = useAppSelector((state) => state.houses.selectedHouse);
 	const appeals = useAppSelector((state) => state.appeals.items);
 	const houseMessages = useAppSelector((state) => state.houseChat.messages);
-	const ownSenderName = useAppSelector((state) => state.houseChat.ownSenderName);
+	const houseChatHouseId = useAppSelector((state) => state.houseChat.houseId);
+	const appealMessages = useAppSelector((state) => state.appealChat.messages);
+	const appealChatAppealId = useAppSelector((state) => state.appealChat.appealId);
 	const currentUser = useAppSelector((state) => state.user.current);
 
 	const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -98,17 +95,30 @@ export function ChatPage() {
 
 	const houseId = houseIdParam ?? (selectedHouse ? String(selectedHouse.id) : undefined);
 	const isHouseChat = !appealId;
-	const currentUserName = currentUser?.name ?? ownSenderName;
+	const visibleHouseMessages =
+		isHouseChat && houseId != null && houseChatHouseId === Number(houseId) ? houseMessages : [];
+	const visibleAppealMessages =
+		appealId != null && appealChatAppealId === Number(appealId) ? appealMessages : [];
 	const chat = useMemo(() => {
-		if (appealId) return resolveAppealChat(appealId, appeals);
+		if (appealId) {
+			return resolveAppealChat(appealId, appeals, visibleAppealMessages, currentUser?.id);
+		}
 
 		return resolveHouseChat(
 			houseId ?? "house",
-			houseMessages,
+			visibleHouseMessages,
 			selectedHouse?.address,
-			currentUserName,
+			currentUser?.id,
 		);
-	}, [appealId, appeals, currentUserName, houseId, houseMessages, selectedHouse?.address]);
+	}, [
+		appealId,
+		appeals,
+		currentUser?.id,
+		houseId,
+		selectedHouse?.address,
+		visibleAppealMessages,
+		visibleHouseMessages,
+	]);
 	const sidebarHouse = selectedHouse ? getChatSidebarHouse(selectedHouse, houses.length) : null;
 	const sidebarAppeals = appeals.map(toChatSidebarAppealItem);
 	const newAppealHomeContext = selectedHouse?.address;
@@ -149,28 +159,60 @@ export function ChatPage() {
 		dispatch(fetchHouseMessages(selectedHouse.id));
 	}, [dispatch, isHouseChat, selectedHouse?.id]);
 
+	useEffect(() => {
+		if (!appealId) return;
+
+		const id = Number(appealId);
+		if (!Number.isFinite(id)) return;
+
+		dispatch(fetchAppealMessages(id));
+	}, [appealId, dispatch]);
+
 	/**
 	 * Отправка сообщения в ленту
-	 * @param text - текст сообщения
+	 * @param payload - текст и вложения
 	 * @returns {void}
 	 */
 	const handleSubmit = useCallback(
-		(text: string) => {
+		(payload: {
+			text: string;
+			attachments: Array<{ dataUrl: string; name: string; mime: string }>;
+		}) => {
+			if (!currentUser) return;
+
+			const { text, attachments } = payload;
+			const attachmentUrls = attachments.map((item) => item.dataUrl);
+
 			if (isHouseChat && selectedHouse) {
 				dispatch(
 					sendHouseMessage({
 						houseId: selectedHouse.id,
 						text,
+						attachments: attachmentUrls,
+						attachmentMeta: attachments,
 						clientId: crypto.randomUUID(),
-						senderName: currentUserName ?? "Я",
+						senderId: currentUser.id,
+						senderName: currentUser.name,
 					}),
 				);
 				return;
 			}
 
-			messageListRef.current?.addMessage(text);
+			if (appealId) {
+				dispatch(
+					sendAppealMessage({
+						appealId: Number(appealId),
+						text,
+						attachments: attachmentUrls,
+						attachmentMeta: attachments,
+						clientId: crypto.randomUUID(),
+						senderId: currentUser.id,
+						senderName: currentUser.name,
+					}),
+				);
+			}
 		},
-		[currentUserName, dispatch, isHouseChat, selectedHouse],
+		[appealId, currentUser, dispatch, isHouseChat, selectedHouse],
 	);
 
 	/**
@@ -205,6 +247,31 @@ export function ChatPage() {
 	const handleCloseNewAppeal = useCallback(() => {
 		setNewAppealOpen(false);
 	}, []);
+
+	/**
+	 * Создание обращения и переход в его чат
+	 * @param values - данные формы
+	 * @returns {void}
+	 */
+	const handleCreateAppeal = useCallback(
+		(values: NewAppealFormValues) => {
+			if (!selectedHouse) return;
+
+			dispatch(
+				createAppeal({
+					houseId: selectedHouse.id,
+					text: buildAppealText(values),
+				}),
+			)
+				.unwrap()
+				.then((appeal) => {
+					setNewAppealOpen(false);
+					navigate(`/chat/${selectedHouse.id}/${appeal.id}`);
+				})
+				.catch(() => undefined);
+		},
+		[dispatch, navigate, selectedHouse],
+	);
 
 	/**
 	 * Открытие пикера дома
@@ -296,7 +363,7 @@ export function ChatPage() {
 				onSummaryClick={handleOpenAppealDetails}
 			/>
 
-			<MessageList ref={messageListRef} chat={chat} />
+			<MessageList key={chat.id} chat={chat} />
 
 			<ChatMessageInput chatId={chat.id} onSubmit={handleSubmit} />
 
@@ -322,6 +389,7 @@ export function ChatPage() {
 						key="new-appeal"
 						homeContext={newAppealHomeContext}
 						onClose={handleCloseNewAppeal}
+						onSubmit={handleCreateAppeal}
 					/>
 				)}
 			</Sidebar>

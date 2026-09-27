@@ -1,9 +1,13 @@
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 
-import { fetchHouseAppeals as fetchHouseAppealsRequest } from "@/api/appeals";
+import {
+	createAppeal as createAppealRequest,
+	fetchHouseAppeals as fetchHouseAppealsRequest,
+} from "@/api/appeals";
+import { getMaxUserId } from "@/max/webApp";
 import { hideLoader, showLoader } from "@/store/ui/ui.slice";
 
-import type { AppealsState } from "./appeals.types";
+import type { Appeal, AppealsState, CreateAppealArg } from "./appeals.types";
 
 const initialState: AppealsState = {
 	items: [],
@@ -31,6 +35,46 @@ export const fetchHouseAppeals = createAsyncThunk(
 	},
 );
 
+/**
+ * Создание обращения
+ * @param payload - дом и текст
+ */
+export const createAppeal = createAsyncThunk(
+	"appeals/createAppeal",
+	async (payload: CreateAppealArg, { dispatch, rejectWithValue }) => {
+		const userId = getMaxUserId();
+
+		if (userId == null) {
+			return rejectWithValue("Не удалось получить id пользователя MAX");
+		}
+
+		dispatch(showLoader());
+
+		try {
+			return await createAppealRequest({
+				text: payload.text,
+				user_id: userId,
+				house_id: payload.houseId,
+				attachments: payload.attachments,
+			});
+		} catch (error) {
+			const message = error instanceof Error ? error.message : "Не удалось создать обращение";
+			return rejectWithValue(message);
+		} finally {
+			dispatch(hideLoader());
+		}
+	},
+);
+
+/**
+ * AppealDetail → Appeal для списка
+ * @param detail - ответ create / messages
+ */
+function toAppealListItem(detail: Appeal & { messages?: unknown }): Appeal {
+	const { messages: _messages, ...appeal } = detail;
+	return appeal;
+}
+
 const appealsSlice = createSlice({
 	name: "appeals",
 	initialState,
@@ -54,6 +98,22 @@ const appealsSlice = createSlice({
 				state.items = [];
 				state.error =
 					typeof action.payload === "string" ? action.payload : "Не удалось загрузить обращения";
+			})
+			/** Старт создания обращения */
+			.addCase(createAppeal.pending, (state) => {
+				state.error = null;
+			})
+			/** Обращение создано — добавляем в список */
+			.addCase(createAppeal.fulfilled, (state, action) => {
+				const appeal = toAppealListItem(action.payload);
+				state.items = [appeal, ...state.items.filter((item) => item.id !== appeal.id)];
+				state.status = "succeeded";
+				state.error = null;
+			})
+			/** Ошибка создания обращения */
+			.addCase(createAppeal.rejected, (state, action) => {
+				state.error =
+					typeof action.payload === "string" ? action.payload : "Не удалось создать обращение";
 			});
 	},
 });

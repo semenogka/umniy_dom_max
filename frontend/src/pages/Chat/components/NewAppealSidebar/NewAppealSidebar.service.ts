@@ -1,5 +1,9 @@
-import { NEW_APPEAL_ERROR_DESCRIPTION, NEW_APPEAL_ERROR_TOPIC } from "./NewAppealSidebar.config";
-import type { NewAppealTopicId } from "./NewAppealSidebar.types";
+import {
+	NEW_APPEAL_ERROR_DESCRIPTION,
+	NEW_APPEAL_ERROR_TOPIC,
+	NEW_APPEAL_TOPICS,
+} from "./NewAppealSidebar.config";
+import type { NewAppealFormValues, NewAppealTopicId } from "./NewAppealSidebar.types";
 
 /**
  * Собирает className корня формы
@@ -48,4 +52,17 @@ export function getNewAppealValidationError(
  */
 export function canSubmitNewAppeal(topicId: NewAppealTopicId | null, description: string): boolean {
 	return Boolean(topicId) && Boolean(description.trim());
+}
+
+/**
+ * Текст обращения для API (тема + описание)
+ * @param values - данные формы
+ */
+export function buildAppealText(values: NewAppealFormValues): string {
+	const topic = NEW_APPEAL_TOPICS.find((item) => item.id === values.topicId);
+	const description = values.description.trim();
+
+	if (!topic) return description;
+
+	return `${topic.label}. ${description}`;
 }

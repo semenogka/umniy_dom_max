@@ -1,19 +1,10 @@
-import {
-	memo,
-	useCallback,
-	useEffect,
-	useImperativeHandle,
-	useLayoutEffect,
-	useMemo,
-	useRef,
-	useState,
-} from "react";
-import { format } from "date-fns";
+import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 
 import { DateChip } from "@/components/DateChip";
+import { Icon } from "@/components/Icon";
+import { ImageLightbox } from "@/components/ImageLightbox";
 import { Message } from "@/components/Message";
 
-import { CHAT_TODAY_LABEL } from "../../Chat.mock";
 import type { ChatMessage } from "../../Chat.types";
 import { MESSAGE_LIST_DATE_IDLE_MS } from "./MessageList.config";
 import styles from "./MessageList.module.scss";
@@ -28,7 +19,7 @@ import {
 import type { MessageListProps, SenderGroupProps } from "./MessageList.types";
 
 /** Группа сообщений одного отправителя */
-const SenderGroup = memo(function SenderGroup({ group }: SenderGroupProps) {
+const SenderGroup = memo(function SenderGroup({ group, onOpenAttachment }: SenderGroupProps) {
 	const showAvatar = !group.isOut && Boolean(group.avatarUrl);
 
 	const bubbles = (
@@ -46,6 +37,33 @@ const SenderGroup = memo(function SenderGroup({ group }: SenderGroupProps) {
 						tail={isLast}
 						className={styles.bubble}
 					>
+						{message.attachments?.map((attachment, attachmentIndex) =>
+							attachment.isImage ? (
+								<button
+									key={`${message.id}:${attachmentIndex}`}
+									type="button"
+									className={styles.attachment}
+									aria-label="Открыть фото"
+									onClick={() => onOpenAttachment?.(attachment.url)}
+								>
+									<img src={attachment.url} alt={attachment.name} />
+								</button>
+							) : (
+								<a
+									key={`${message.id}:${attachmentIndex}`}
+									className={styles.file}
+									href={attachment.url}
+									download={attachment.name}
+									target="_blank"
+									rel="noreferrer"
+								>
+									<span className={styles.fileIcon} aria-hidden>
+										<Icon name="attachment" size={16} />
+									</span>
+									<span className={styles.fileName}>{attachment.name}</span>
+								</a>
+							),
+						)}
 						{message.text}
 					</Message>
 				);
@@ -74,8 +92,9 @@ const SenderGroup = memo(function SenderGroup({ group }: SenderGroupProps) {
 });
 
 /** Лента сообщений */
-export const MessageList = memo(function MessageList({ chat, ref }: MessageListProps) {
+export const MessageList = memo(function MessageList({ chat }: MessageListProps) {
 	const [messages, setMessages] = useState<ChatMessage[]>(chat.messages);
+	const [lightboxSrc, setLightboxSrc] = useState<string | null>(null);
 	const listRef = useRef<HTMLDivElement>(null);
 	const dateSentinelRefs = useRef<Map<string, HTMLElement>>(new Map());
 	const dateChipRefs = useRef<Map<string, HTMLElement>>(new Map());
@@ -121,26 +140,10 @@ export const MessageList = memo(function MessageList({ chat, ref }: MessageListP
 		});
 	}, [messages, syncDateChips]);
 
-	useImperativeHandle(
-		ref,
-		() => ({
-			addMessage: (text: string) => {
-				const next: ChatMessage = {
-					id: String(Date.now()),
-					kind: "out",
-					dateLabel: CHAT_TODAY_LABEL,
-					text,
-					time: format(new Date(), "HH:mm"),
-					delivery: "sent",
-				};
-
-				stickToBottomRef.current = true;
-				setMessages((prev) => [...prev, next]);
-			},
-		}),
-		[],
-	);
-
+	/**
+	 * Скролл ленты
+	 * @returns {void}
+	 */
 	const handleScroll = useCallback(() => {
 		const list = listRef.current;
 		if (!list) return;
@@ -157,6 +160,29 @@ export const MessageList = memo(function MessageList({ chat, ref }: MessageListP
 		}, MESSAGE_LIST_DATE_IDLE_MS);
 	}, [syncDateChips]);
 
+	/**
+	 * Открыть фото в лайтбоксе
+	 * @param url - url вложения
+	 * @returns {void}
+	 */
+	const handleOpenAttachment = useCallback((url: string) => {
+		setLightboxSrc(url);
+	}, []);
+
+	/**
+	 * Закрыть лайтбокс
+	 * @returns {void}
+	 */
+	const handleCloseLightbox = useCallback(() => {
+		setLightboxSrc(null);
+	}, []);
+
+	/**
+	 * Ref-колбэк для sentinel даты
+	 * @param dateLabel - подпись дня
+	 * @param node - DOM-узел
+	 * @returns {void}
+	 */
 	const setDateSentinelRef = useCallback((dateLabel: string, node: HTMLDivElement | null) => {
 		if (node) {
 			dateSentinelRefs.current.set(dateLabel, node);
@@ -166,6 +192,12 @@ export const MessageList = memo(function MessageList({ chat, ref }: MessageListP
 		dateSentinelRefs.current.delete(dateLabel);
 	}, []);
 
+	/**
+	 * Ref-колбэк для чипа даты
+	 * @param dateLabel - подпись дня
+	 * @param node - DOM-узел
+	 * @returns {void}
+	 */
 	const setDateChipRef = useCallback((dateLabel: string, node: HTMLDivElement | null) => {
 		if (node) {
 			dateChipRefs.current.set(dateLabel, node);
@@ -176,31 +208,34 @@ export const MessageList = memo(function MessageList({ chat, ref }: MessageListP
 	}, []);
 
 	return (
-		<div ref={listRef} className={styles.root} onScroll={handleScroll}>
-			{dateGroups.map((group) => (
-				<div key={group.dateLabel} className={styles.day}>
-					<div
-						ref={(node) => setDateSentinelRef(group.dateLabel, node)}
-						className={styles.dateSentinel}
-						aria-hidden
-					/>
-
-					<div ref={(node) => setDateChipRef(group.dateLabel, node)} className={styles.date}>
-						<DateChip>{group.dateLabel}</DateChip>
-					</div>
-
-					{group.senderGroups.map((senderGroup) => (
-						<SenderGroup
-							key={`${group.dateLabel}:${senderGroup.messages[0]?.id}`}
-							group={senderGroup}
+		<>
+			<div ref={listRef} className={styles.root} onScroll={handleScroll}>
+				{dateGroups.map((group) => (
+					<div key={group.dateLabel} className={styles.day}>
+						<div
+							ref={(node) => setDateSentinelRef(group.dateLabel, node)}
+							className={styles.dateSentinel}
+							aria-hidden
 						/>
-					))}
-				</div>
-			))}
-		</div>
+
+						<div ref={(node) => setDateChipRef(group.dateLabel, node)} className={styles.date}>
+							<DateChip>{group.dateLabel}</DateChip>
+						</div>
+
+						{group.senderGroups.map((senderGroup) => (
+							<SenderGroup
+								key={`${group.dateLabel}:${senderGroup.messages[0]?.id}`}
+								group={senderGroup}
+								onOpenAttachment={handleOpenAttachment}
+							/>
+						))}
+					</div>
+				))}
+			</div>
+
+			<ImageLightbox src={lightboxSrc} open={Boolean(lightboxSrc)} onClose={handleCloseLightbox} />
+		</>
 	);
 });
 
 MessageList.displayName = "MessageList";
-
-export type { MessageListHandle, MessageListProps } from "./MessageList.types";

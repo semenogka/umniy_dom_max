@@ -2,12 +2,19 @@ import { format, isToday, isYesterday, parseISO } from "date-fns";
 import { ru } from "date-fns/locale";
 
 import { STATUS_META } from "@/components/Status/Status.config";
+import { isImageFile } from "@/components/MessageInput/MessageInput.service";
 import type { Appeal } from "@/store/appeals/appeals.types";
 import type { House, HouseMessage } from "@/store/houses/houses.types";
 import { pluralizeRu } from "@/utils/pluralizeRu";
 
-import { CHAT_TODAY_LABEL, CONVERSATION_CHAT_MOCK } from "./Chat.mock";
-import type { ChatMessage, ChatMock, ChatSidebarAppealItem, ChatSidebarHouse } from "./Chat.types";
+import { CHAT_TODAY_LABEL, HOUSE_CHAT_TITLE } from "./Chat.config";
+import type {
+	Chat,
+	ChatAttachment,
+	ChatMessage,
+	ChatSidebarAppealItem,
+	ChatSidebarHouse,
+} from "./Chat.types";
 
 /**
  * Собирает className страницы чата
@@ -40,12 +47,54 @@ function formatMessageDateLabel(iso: string): string {
 }
 
 /**
+ * Имя файла из url / data URL
+ * @param url - url вложения
+ * @param fallbackName - локальное имя
+ */
+function getAttachmentName(url: string, fallbackName?: string): string {
+	if (fallbackName) return fallbackName;
+
+	if (url.startsWith("data:")) {
+		const mime = url.slice(5).split(";")[0] ?? "file";
+		const subtype = mime.split("/")[1] ?? "bin";
+		return `file.${subtype}`;
+	}
+
+	try {
+		const path = new URL(url).pathname;
+		const name = path.split("/").pop();
+		if (name) return decodeURIComponent(name);
+	} catch {
+		/* ignore */
+	}
+
+	return "Файл";
+}
+
+/**
+ * Вложение API → вложение ленты
+ * @param url - url
+ * @param name - имя
+ */
+function toChatAttachment(url: string, name?: string): ChatAttachment {
+	return {
+		url,
+		name: getAttachmentName(url, name),
+		isImage: isImageFile(url),
+	};
+}
+
+/**
  * Сообщение API → сообщение ленты
  * @param message - сообщение с бэка
- * @param currentUserName - имя текущего пользователя
+ * @param currentUserId - id текущего пользователя MAX
  */
-export function toChatMessage(message: HouseMessage, currentUserName?: string | null): ChatMessage {
-	const isOut = Boolean(currentUserName && message.sender === currentUserName);
+export function toChatMessage(message: HouseMessage, currentUserId?: number | null): ChatMessage {
+	const isOut = currentUserId != null && message.sender_id === currentUserId;
+	const attachments = [...(message.attachments ?? [])]
+		.sort((a, b) => a.ord - b.ord)
+		.filter((item) => Boolean(item.url))
+		.map((item) => toChatAttachment(item.url, item.name));
 
 	return {
 		id: message.clientId ?? String(message.id),
@@ -55,6 +104,7 @@ export function toChatMessage(message: HouseMessage, currentUserName?: string | 
 		time: formatMessageTime(message.created_at),
 		dateLabel: formatMessageDateLabel(message.created_at),
 		delivery: isOut ? (message.delivery ?? "sent") : undefined,
+		attachments: attachments.length ? attachments : undefined,
 	};
 }
 
@@ -63,29 +113,39 @@ export function toChatMessage(message: HouseMessage, currentUserName?: string | 
  * @param houseId - id дома из URL
  * @param messages - сообщения с бэка
  * @param subtitle - подзаголовок (адрес)
- * @param currentUserName - имя текущего пользователя
+ * @param currentUserId - id текущего пользователя MAX
  */
 export function resolveHouseChat(
 	houseId: string,
 	messages: HouseMessage[],
 	subtitle?: string,
-	currentUserName?: string | null,
-): ChatMock {
+	currentUserId?: number | null,
+): Chat {
 	return {
-		...CONVERSATION_CHAT_MOCK,
 		id: houseId,
-		subtitle: subtitle ?? CONVERSATION_CHAT_MOCK.subtitle,
-		messages: messages.map((message) => toChatMessage(message, currentUserName)),
+		type: "conversation",
+		headerType: "conversation",
+		title: HOUSE_CHAT_TITLE,
+		subtitle: subtitle ?? "",
+		messages: messages.map((message) => toChatMessage(message, currentUserId)),
 	};
 }
 
 /**
- * Чат обращения: из стора или заглушка
+ * Чат обращения: шапка из списка + сообщения из стора
  * @param appealId - id обращения из URL
  * @param appeals - список обращений дома
+ * @param messages - сообщения чата обращения
+ * @param currentUserId - id текущего пользователя MAX
  */
-export function resolveAppealChat(appealId: string, appeals: Appeal[]): ChatMock {
+export function resolveAppealChat(
+	appealId: string,
+	appeals: Appeal[],
+	messages: HouseMessage[] = [],
+	currentUserId?: number | null,
+): Chat {
 	const appeal = appeals.find((item) => String(item.id) === appealId);
+	const chatMessages = messages.map((message) => toChatMessage(message, currentUserId));
 
 	if (!appeal) {
 		return {
@@ -96,7 +156,7 @@ export function resolveAppealChat(appealId: string, appeals: Appeal[]): ChatMock
 			subtitle: "В работе",
 			status: "in_progress",
 			number: appealId,
-			messages: [],
+			messages: chatMessages,
 		};
 	}
 
@@ -110,7 +170,7 @@ export function resolveAppealChat(appealId: string, appeals: Appeal[]): ChatMock
 		subtitle: STATUS_META[appeal.status].label,
 		status: appeal.status,
 		number: String(appeal.id),
-		messages: [],
+		messages: chatMessages,
 	};
 }
 

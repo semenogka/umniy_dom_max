@@ -1,5 +1,6 @@
 import { configureStore } from "@reduxjs/toolkit";
 
+import { appealChatReducer } from "./appealChat/appealChat.slice";
 import { appealsReducer } from "./appeals/appeals.slice";
 import { houseChatReducer } from "./houseChat/houseChat.slice";
 import { housesReducer } from "./houses/houses.slice";
@@ -13,6 +14,7 @@ export const store = configureStore({
 		houses: housesReducer,
 		appeals: appealsReducer,
 		houseChat: houseChatReducer,
+		appealChat: appealChatReducer,
 	},
 });
 

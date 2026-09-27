@@ -48,6 +48,7 @@
 	font-weight: var(--text-body-m-weight);
 	line-height: var(--text-body-m-line);
 	overflow-wrap: anywhere;
+	white-space: pre-wrap;
 
 	> :global(p) {
 		margin: 0;

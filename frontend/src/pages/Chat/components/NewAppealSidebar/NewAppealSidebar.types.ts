@@ -17,7 +17,7 @@ export type NewAppealSidebarProps = {
 	homeContext?: string;
 	/** Закрытие листа */
 	onClose?: () => void;
-	/** Отправка формы (без бэка) */
+	/** Отправка формы */
 	onSubmit?: (values: NewAppealFormValues) => void;
 	/** Дополнительный класс */
 	className?: string;

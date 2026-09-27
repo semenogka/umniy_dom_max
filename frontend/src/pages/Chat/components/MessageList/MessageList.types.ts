@@ -1,19 +1,9 @@
-import type { Ref } from "react";
-
-import type { ChatMessage, ChatMock } from "../../Chat.types";
-
-/** Imperative API ленты */
-export type MessageListHandle = {
-	/** Добавляет исходящее сообщение */
-	addMessage: (text: string) => void;
-};
+import type { Chat, ChatMessage } from "../../Chat.types";
 
 /** Пропсы MessageList */
 export type MessageListProps = {
 	/** Данные чата */
-	chat: ChatMock;
-	/** Imperative handle */
-	ref?: Ref<MessageListHandle>;
+	chat: Chat;
 };
 
 /** Группа сообщений за один день */
@@ -40,4 +30,6 @@ export type MessageListSenderGroup = {
 export type SenderGroupProps = {
 	/** Группа сообщений одного отправителя */
 	group: MessageListSenderGroup;
+	/** Открыть вложение в лайтбоксе */
+	onOpenAttachment?: (url: string) => void;
 };

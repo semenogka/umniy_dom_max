@@ -1,34 +1,37 @@
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 
 import {
-	fetchHouseMessages as fetchHouseMessagesRequest,
-	sendHouseMessage as sendHouseMessageRequest,
-} from "@/api/houses";
+	fetchAppealMessages as fetchAppealMessagesRequest,
+	sendAppealMessage as sendAppealMessageRequest,
+} from "@/api/appeals";
 import { getMaxUserId } from "@/max/webApp";
 import { hideLoader, showLoader } from "@/store/ui/ui.slice";
 
-import type { HouseChatState } from "./houseChat.types";
+import type { AppealChatState } from "./appealChat.types";
 
-const initialState: HouseChatState = {
-	houseId: null,
-	loadingHouseId: null,
+const initialState: AppealChatState = {
+	appealId: null,
+	loadingAppealId: null,
 	messages: [],
 	status: "idle",
 	error: null,
 };
 
 /**
- * Загрузка сообщений общего чата дома
- * @param houseId - id дома
+ * Загрузка сообщений чата обращения
+ * @param appealId - id обращения
  */
-export const fetchHouseMessages = createAsyncThunk(
-	"houseChat/fetchHouseMessages",
-	async (houseId: number, { dispatch, rejectWithValue }) => {
+export const fetchAppealMessages = createAsyncThunk(
+	"appealChat/fetchAppealMessages",
+	async (appealId: number, { dispatch, rejectWithValue }) => {
 		dispatch(showLoader());
 
 		try {
-			const house = await fetchHouseMessagesRequest(houseId);
-			return { houseId, messages: Array.isArray(house.messages) ? house.messages : [] };
+			const appeal = await fetchAppealMessagesRequest(appealId);
+			return {
+				appealId,
+				messages: Array.isArray(appeal.messages) ? appeal.messages : [],
+			};
 		} catch (error) {
 			const message = error instanceof Error ? error.message : "Не удалось загрузить сообщения";
 			return rejectWithValue(message);
@@ -38,9 +41,9 @@ export const fetchHouseMessages = createAsyncThunk(
 	},
 );
 
-type SendHouseMessageArg = {
-	/** Id дома */
-	houseId: number;
+type SendAppealMessageArg = {
+	/** Id обращения */
+	appealId: number;
 	/** Текст сообщения */
 	text: string;
 	/** Вложения (base64 / data URL) */
@@ -56,12 +59,12 @@ type SendHouseMessageArg = {
 };
 
 /**
- * Отправка сообщения в общий чат дома
- * @param payload - дом, текст и clientId
+ * Отправка сообщения в чат обращения
+ * @param payload - обращение, текст и clientId
  */
-export const sendHouseMessage = createAsyncThunk(
-	"houseChat/sendHouseMessage",
-	async (payload: SendHouseMessageArg, { rejectWithValue }) => {
+export const sendAppealMessage = createAsyncThunk(
+	"appealChat/sendAppealMessage",
+	async (payload: SendAppealMessageArg, { rejectWithValue }) => {
 		const userId = getMaxUserId();
 
 		if (userId == null) {
@@ -69,7 +72,7 @@ export const sendHouseMessage = createAsyncThunk(
 		}
 
 		try {
-			const message = await sendHouseMessageRequest(payload.houseId, {
+			const message = await sendAppealMessageRequest(payload.appealId, {
 				text: payload.text,
 				user_id: userId,
 				attachments: payload.attachments,
@@ -83,32 +86,32 @@ export const sendHouseMessage = createAsyncThunk(
 	},
 );
 
-const houseChatSlice = createSlice({
-	name: "houseChat",
+const appealChatSlice = createSlice({
+	name: "appealChat",
 	initialState,
 	reducers: {
-		/** Очистка чата дома */
-		clearHouseChat() {
+		/** Очистка чата обращения */
+		clearAppealChat() {
 			return initialState;
 		},
 	},
 	extraReducers: (builder) => {
 		builder
 			/** Старт загрузки сообщений */
-			.addCase(fetchHouseMessages.pending, (state, action) => {
+			.addCase(fetchAppealMessages.pending, (state, action) => {
 				state.status = "loading";
 				state.error = null;
-				state.houseId = null;
-				state.loadingHouseId = action.meta.arg;
+				state.appealId = null;
+				state.loadingAppealId = action.meta.arg;
 				state.messages = [];
 			})
 			/** Успешная загрузка сообщений */
-			.addCase(fetchHouseMessages.fulfilled, (state, action) => {
-				if (action.meta.arg !== state.loadingHouseId) return;
+			.addCase(fetchAppealMessages.fulfilled, (state, action) => {
+				if (action.meta.arg !== state.loadingAppealId) return;
 
 				state.status = "succeeded";
-				state.houseId = action.payload.houseId;
-				state.loadingHouseId = null;
+				state.appealId = action.payload.appealId;
+				state.loadingAppealId = null;
 				state.messages = action.payload.messages.map((message) => ({
 					...message,
 					delivery: "sent" as const,
@@ -116,18 +119,18 @@ const houseChatSlice = createSlice({
 				state.error = null;
 			})
 			/** Ошибка загрузки сообщений */
-			.addCase(fetchHouseMessages.rejected, (state, action) => {
-				if (action.meta.arg !== state.loadingHouseId) return;
+			.addCase(fetchAppealMessages.rejected, (state, action) => {
+				if (action.meta.arg !== state.loadingAppealId) return;
 
 				state.status = "failed";
-				state.houseId = null;
-				state.loadingHouseId = null;
+				state.appealId = null;
+				state.loadingAppealId = null;
 				state.messages = [];
 				state.error =
 					typeof action.payload === "string" ? action.payload : "Не удалось загрузить сообщения";
 			})
 			/** Оптимистичное сообщение в pending */
-			.addCase(sendHouseMessage.pending, (state, action) => {
+			.addCase(sendAppealMessage.pending, (state, action) => {
 				const {
 					clientId,
 					text,
@@ -154,7 +157,7 @@ const houseChatSlice = createSlice({
 				});
 			})
 			/** Бэк сохранил сообщение — обновляем pending */
-			.addCase(sendHouseMessage.fulfilled, (state, action) => {
+			.addCase(sendAppealMessage.fulfilled, (state, action) => {
 				const { clientId, message } = action.payload;
 				const index = state.messages.findIndex((item) => item.clientId === clientId);
 
@@ -168,7 +171,7 @@ const houseChatSlice = createSlice({
 				else state.messages.push(nextMessage);
 			})
 			/** Ошибка отправки — помечаем pending */
-			.addCase(sendHouseMessage.rejected, (state, action) => {
+			.addCase(sendAppealMessage.rejected, (state, action) => {
 				const clientId = action.meta.arg.clientId;
 				const message = state.messages.find((item) => item.clientId === clientId);
 
@@ -180,5 +183,5 @@ const houseChatSlice = createSlice({
 	},
 });
 
-export const { clearHouseChat } = houseChatSlice.actions;
-export const houseChatReducer = houseChatSlice.reducer;
+export const { clearAppealChat } = appealChatSlice.actions;
+export const appealChatReducer = appealChatSlice.reducer;

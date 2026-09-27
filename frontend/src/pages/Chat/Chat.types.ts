@@ -5,6 +5,16 @@ import type { MessageDelivery, MessageKind } from "@/components/Message/Message.
 /** Тип чата */
 export type ChatType = "appeal" | "conversation";
 
+/** Вложение в ленте */
+export type ChatAttachment = {
+	/** URL / data URL */
+	url: string;
+	/** Имя файла */
+	name: string;
+	/** Картинка для превью / лайтбокса */
+	isImage: boolean;
+};
+
 /** Сообщение в ленте */
 export type ChatMessage = {
 	/** Идентификатор */
@@ -23,10 +33,12 @@ export type ChatMessage = {
 	avatarUrl?: string;
 	/** Статус доставки */
 	delivery?: MessageDelivery;
+	/** Вложения */
+	attachments?: ChatAttachment[];
 };
 
-/** Мок чата */
-export type ChatMock = {
+/** Данные чата для UI */
+export type Chat = {
 	/** Идентификатор */
 	id: string;
 	/** Тип чата */
@@ -88,7 +100,7 @@ export type ChatSidebarAppealItem = {
 /** Пропсы шапки страницы чата */
 export type ChatHeaderProps = {
 	/** Данные чата */
-	chat: ChatMock;
+	chat: Chat;
 	/** Открытие сайдбара */
 	onMenuClick: () => void;
 	/** Открытие сведений о заявке */
@@ -100,5 +112,8 @@ export type ChatMessageInputProps = {
 	/** Id чата */
 	chatId: string;
 	/** Отправка сообщения */
-	onSubmit: (text: string) => void;
+	onSubmit: (payload: {
+		text: string;
+		attachments: Array<{ dataUrl: string; name: string; mime: string }>;
+	}) => void;
 };

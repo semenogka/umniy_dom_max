@@ -1,9 +1,9 @@
-import type { ChatMock } from "../../Chat.types";
+import type { Chat } from "../../Chat.types";
 
 /** Пропсы AppealDetailsSidebar */
 export type AppealDetailsSidebarProps = {
 	/** Данные заявки */
-	chat: ChatMock;
+	chat: Chat;
 	/** Акт уже запрошен */
 	actRequested?: boolean;
 	/** Запрос акта */

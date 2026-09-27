@@ -30,7 +30,7 @@ export const Controlled: Story = {
 			<MessageInput
 				value={value}
 				onChange={setValue}
-				onSubmit={(text) => {
+				onSubmit={({ text }) => {
 					console.log(text);
 					setValue("");
 				}}
