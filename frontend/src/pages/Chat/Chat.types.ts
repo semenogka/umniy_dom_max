@@ -25,8 +25,8 @@ export type ChatMessage = {
 	delivery?: MessageDelivery;
 };
 
-/** Мок чата */
-export type ChatMock = {
+/** Данные чата для UI */
+export type Chat = {
 	/** Идентификатор */
 	id: string;
 	/** Тип чата */
@@ -88,7 +88,7 @@ export type ChatSidebarAppealItem = {
 /** Пропсы шапки страницы чата */
 export type ChatHeaderProps = {
 	/** Данные чата */
-	chat: ChatMock;
+	chat: Chat;
 	/** Открытие сайдбара */
 	onMenuClick: () => void;
 	/** Открытие сведений о заявке */

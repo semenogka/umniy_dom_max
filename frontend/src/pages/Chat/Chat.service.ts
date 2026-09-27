@@ -6,8 +6,8 @@ import type { Appeal } from "@/store/appeals/appeals.types";
 import type { House, HouseMessage } from "@/store/houses/houses.types";
 import { pluralizeRu } from "@/utils/pluralizeRu";
 
-import { CHAT_TODAY_LABEL, CONVERSATION_CHAT_MOCK } from "./Chat.mock";
-import type { ChatMessage, ChatMock, ChatSidebarAppealItem, ChatSidebarHouse } from "./Chat.types";
+import { CHAT_TODAY_LABEL, HOUSE_CHAT_TITLE } from "./Chat.config";
+import type { Chat, ChatMessage, ChatSidebarAppealItem, ChatSidebarHouse } from "./Chat.types";
 
 /**
  * Собирает className страницы чата
@@ -70,22 +70,32 @@ export function resolveHouseChat(
 	messages: HouseMessage[],
 	subtitle?: string,
 	currentUserId?: number | null,
-): ChatMock {
+): Chat {
 	return {
-		...CONVERSATION_CHAT_MOCK,
 		id: houseId,
-		subtitle: subtitle ?? CONVERSATION_CHAT_MOCK.subtitle,
+		type: "conversation",
+		headerType: "conversation",
+		title: HOUSE_CHAT_TITLE,
+		subtitle: subtitle ?? "",
 		messages: messages.map((message) => toChatMessage(message, currentUserId)),
 	};
 }
 
 /**
- * Чат обращения: из стора или заглушка
+ * Чат обращения: шапка из списка + сообщения из стора
  * @param appealId - id обращения из URL
  * @param appeals - список обращений дома
+ * @param messages - сообщения чата обращения
+ * @param currentUserId - id текущего пользователя MAX
  */
-export function resolveAppealChat(appealId: string, appeals: Appeal[]): ChatMock {
+export function resolveAppealChat(
+	appealId: string,
+	appeals: Appeal[],
+	messages: HouseMessage[] = [],
+	currentUserId?: number | null,
+): Chat {
 	const appeal = appeals.find((item) => String(item.id) === appealId);
+	const chatMessages = messages.map((message) => toChatMessage(message, currentUserId));
 
 	if (!appeal) {
 		return {
@@ -96,7 +106,7 @@ export function resolveAppealChat(appealId: string, appeals: Appeal[]): ChatMock
 			subtitle: "В работе",
 			status: "in_progress",
 			number: appealId,
-			messages: [],
+			messages: chatMessages,
 		};
 	}
 
@@ -110,7 +120,7 @@ export function resolveAppealChat(appealId: string, appeals: Appeal[]): ChatMock
 		subtitle: STATUS_META[appeal.status].label,
 		status: appeal.status,
 		number: String(appeal.id),
-		messages: [],
+		messages: chatMessages,
 	};
 }
 

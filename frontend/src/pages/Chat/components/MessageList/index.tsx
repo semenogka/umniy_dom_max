@@ -1,19 +1,8 @@
-import {
-	memo,
-	useCallback,
-	useEffect,
-	useImperativeHandle,
-	useLayoutEffect,
-	useMemo,
-	useRef,
-	useState,
-} from "react";
-import { format } from "date-fns";
+import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 
 import { DateChip } from "@/components/DateChip";
 import { Message } from "@/components/Message";
 
-import { CHAT_TODAY_LABEL } from "../../Chat.mock";
 import type { ChatMessage } from "../../Chat.types";
 import { MESSAGE_LIST_DATE_IDLE_MS } from "./MessageList.config";
 import styles from "./MessageList.module.scss";
@@ -74,7 +63,7 @@ const SenderGroup = memo(function SenderGroup({ group }: SenderGroupProps) {
 });
 
 /** Лента сообщений */
-export const MessageList = memo(function MessageList({ chat, ref }: MessageListProps) {
+export const MessageList = memo(function MessageList({ chat }: MessageListProps) {
 	const [messages, setMessages] = useState<ChatMessage[]>(chat.messages);
 	const listRef = useRef<HTMLDivElement>(null);
 	const dateSentinelRefs = useRef<Map<string, HTMLElement>>(new Map());
@@ -121,26 +110,10 @@ export const MessageList = memo(function MessageList({ chat, ref }: MessageListP
 		});
 	}, [messages, syncDateChips]);
 
-	useImperativeHandle(
-		ref,
-		() => ({
-			addMessage: (text: string) => {
-				const next: ChatMessage = {
-					id: String(Date.now()),
-					kind: "out",
-					dateLabel: CHAT_TODAY_LABEL,
-					text,
-					time: format(new Date(), "HH:mm"),
-					delivery: "sent",
-				};
-
-				stickToBottomRef.current = true;
-				setMessages((prev) => [...prev, next]);
-			},
-		}),
-		[],
-	);
-
+	/**
+	 * Скролл ленты
+	 * @returns {void}
+	 */
 	const handleScroll = useCallback(() => {
 		const list = listRef.current;
 		if (!list) return;
@@ -157,6 +130,12 @@ export const MessageList = memo(function MessageList({ chat, ref }: MessageListP
 		}, MESSAGE_LIST_DATE_IDLE_MS);
 	}, [syncDateChips]);
 
+	/**
+	 * Ref-колбэк для sentinel даты
+	 * @param dateLabel - подпись дня
+	 * @param node - DOM-узел
+	 * @returns {void}
+	 */
 	const setDateSentinelRef = useCallback((dateLabel: string, node: HTMLDivElement | null) => {
 		if (node) {
 			dateSentinelRefs.current.set(dateLabel, node);
@@ -166,6 +145,12 @@ export const MessageList = memo(function MessageList({ chat, ref }: MessageListP
 		dateSentinelRefs.current.delete(dateLabel);
 	}, []);
 
+	/**
+	 * Ref-колбэк для чипа даты
+	 * @param dateLabel - подпись дня
+	 * @param node - DOM-узел
+	 * @returns {void}
+	 */
 	const setDateChipRef = useCallback((dateLabel: string, node: HTMLDivElement | null) => {
 		if (node) {
 			dateChipRefs.current.set(dateLabel, node);
@@ -202,5 +187,3 @@ export const MessageList = memo(function MessageList({ chat, ref }: MessageListP
 });
 
 MessageList.displayName = "MessageList";
-
-export type { MessageListHandle, MessageListProps } from "./MessageList.types";
