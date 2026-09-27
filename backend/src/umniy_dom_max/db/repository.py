@@ -126,11 +126,18 @@ async def create_appeal(
 
 async def set_appeal_status(
     db: AsyncSession, appeal: Appeal, status: str, system_text: str | None
-) -> None:
+) -> AppealMessage | None:
     appeal.status = status
+    system_msg: AppealMessage | None = None
     if system_text:
-        db.add(AppealMessage(appeal_id=appeal.id, sender_id=0, sender="bot", text=system_text))
+        system_msg = AppealMessage(
+            appeal_id=appeal.id, sender_id=0, sender="bot", text=system_text
+        )
+        db.add(system_msg)
     await db.commit()
+    if system_msg is not None:
+        await db.refresh(system_msg)
+    return system_msg
 
 
 async def add_appeal_message(

@@ -1,3 +1,4 @@
+import type { Appeal } from "@/store/appeals/appeals.types";
 import type { HouseMessage } from "@/store/houses/houses.types";
 
 import { API_BASE_URL } from "./client";
@@ -17,7 +18,23 @@ export type ChatSocketReadEvent = {
 	message_ids: number[];
 };
 
-export type ChatSocketEvent = ChatSocketMessageEvent | ChatSocketReadEvent;
+/** Новая заявка в доме */
+export type ChatSocketAppealCreatedEvent = {
+	type: "appeal_created";
+	data: Appeal;
+};
+
+/** Обновление заявки (статус и т.п.) */
+export type ChatSocketAppealUpdatedEvent = {
+	type: "appeal_updated";
+	data: Appeal;
+};
+
+export type ChatSocketEvent =
+	| ChatSocketMessageEvent
+	| ChatSocketReadEvent
+	| ChatSocketAppealCreatedEvent
+	| ChatSocketAppealUpdatedEvent;
 
 type ChatSocketHandlers = {
 	/** Событие с сервера */
@@ -25,6 +42,8 @@ type ChatSocketHandlers = {
 	/** Ошибка сокета */
 	onError?: (error: Event) => void;
 };
+
+const CHAT_SOCKET_EVENT_TYPES = new Set(["message", "read", "appeal_created", "appeal_updated"]);
 
 /**
  * HTTP base → WebSocket base
@@ -79,7 +98,7 @@ export class ChatSocket {
 		socket.onmessage = (event) => {
 			try {
 				const payload = JSON.parse(String(event.data)) as ChatSocketEvent;
-				if (payload?.type === "message" || payload?.type === "read") {
+				if (payload?.type && CHAT_SOCKET_EVENT_TYPES.has(payload.type)) {
 					this.handlers.onEvent?.(payload);
 				}
 			} catch {

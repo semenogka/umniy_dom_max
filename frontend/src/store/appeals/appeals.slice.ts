@@ -1,4 +1,4 @@
-import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
+import { createAsyncThunk, createSlice, type PayloadAction } from "@reduxjs/toolkit";
 
 import {
 	createAppeal as createAppealRequest,
@@ -75,10 +75,37 @@ function toAppealListItem(detail: Appeal & { messages?: unknown }): Appeal {
 	return appeal;
 }
 
+/**
+ * Вставить / обновить заявку в списке
+ * @param items - текущий список
+ * @param appeal - заявка
+ * @param prepend - новая заявка вверх
+ * @returns {void}
+ */
+function upsertAppeal(items: Appeal[], appeal: Appeal, prepend = false): void {
+	const index = items.findIndex((item) => item.id === appeal.id);
+	if (index >= 0) {
+		items[index] = { ...items[index], ...appeal };
+		return;
+	}
+
+	if (prepend) items.unshift(appeal);
+	else items.push(appeal);
+}
+
 const appealsSlice = createSlice({
 	name: "appeals",
 	initialState,
-	reducers: {},
+	reducers: {
+		/** Новая заявка из WebSocket */
+		appealCreated(state, action: PayloadAction<Appeal>) {
+			upsertAppeal(state.items, action.payload, true);
+		},
+		/** Обновление заявки из WebSocket */
+		appealUpdated(state, action: PayloadAction<Appeal>) {
+			upsertAppeal(state.items, action.payload);
+		},
+	},
 	extraReducers: (builder) => {
 		builder
 			/** Старт загрузки обращений */
@@ -105,8 +132,7 @@ const appealsSlice = createSlice({
 			})
 			/** Обращение создано — добавляем в список */
 			.addCase(createAppeal.fulfilled, (state, action) => {
-				const appeal = toAppealListItem(action.payload);
-				state.items = [appeal, ...state.items.filter((item) => item.id !== appeal.id)];
+				upsertAppeal(state.items, toAppealListItem(action.payload), true);
 				state.status = "succeeded";
 				state.error = null;
 			})
@@ -118,4 +144,5 @@ const appealsSlice = createSlice({
 	},
 });
 
+export const { appealCreated, appealUpdated } = appealsSlice.actions;
 export const appealsReducer = appealsSlice.reducer;

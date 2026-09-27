@@ -61,6 +61,7 @@ async def create_appeal(
     data: AppealIn,
     db: DbSession,
     agent: AppealAgentDep,
+    ws: WsManagerDep,
 ):
     try:
         classification = (await agent.run(data.text)).output
@@ -105,9 +106,17 @@ async def create_appeal(
         attachments=[{"data": b64, "filename": f"photo_{i}.jpg", "mime": "image/jpeg"} for i, b64 in enumerate(data.attachments or [])],
     )
 
-    return await repository.create_appeal(
+    appeal = await repository.create_appeal(
         db, user.id, house.address, data.text, data.attachments, classification, bot_text, mail_subject, user.name
     )
+    await ws.broadcast(
+        house_room(house.id),
+        {
+            "type": "appeal_created",
+            "data": AppealOut.model_validate(appeal).model_dump(mode="json"),
+        },
+    )
+    return appeal
 
 
 @router.patch("/appeals/{appeal_id}/update", response_model=AppealOut, tags=["Обращения"],
@@ -118,6 +127,7 @@ async def update_appeal_status(
     data: StatusIn,
     db: DbSession,
     settings: SettingsDep,
+    ws: WsManagerDep,
 ):
     appeal = await repository.get_appeal(db, appeal_id)
     if not appeal:
@@ -133,7 +143,7 @@ async def update_appeal_status(
     if data.status == "checked":
         bot_text = "Статус изменен. Ваш запрос проверен."
 
-    await repository.set_appeal_status(
+    system_msg = await repository.set_appeal_status(
         db,
         appeal,
         data.status,
@@ -157,6 +167,34 @@ async def update_appeal_status(
             )
         except Exception:  # noqa: BLE001 — уведомление не должно ронять запрос
             logger.exception("не получилось уведомить в бота")
+
+        appeal_payload = {
+            "type": "appeal_updated",
+            "data": AppealOut.model_validate(appeal).model_dump(mode="json"),
+        }
+        await ws.broadcast(appeal_room(appeal.id), appeal_payload)
+
+        if appeal.appeal_address:
+            house = await repository.get_house_by_address(db, appeal.appeal_address)
+            if house:
+                await ws.broadcast(house_room(house.id), appeal_payload)
+
+        if system_msg is not None:
+            await ws.broadcast(
+                appeal_room(appeal.id),
+                {
+                    "type": "message",
+                    "data": MessageOut(
+                        id=system_msg.id,
+                        sender_id=system_msg.sender_id,
+                        sender=system_msg.sender or "bot",
+                        text=system_msg.text,
+                        created_at=system_msg.created_at,
+                        is_read=bool(system_msg.is_read),
+                        attachments=[],
+                    ).model_dump(mode="json"),
+                },
+            )
 
     return appeal
 

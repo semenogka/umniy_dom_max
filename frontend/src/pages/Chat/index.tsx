@@ -4,6 +4,8 @@ import { useNavigate, useParams } from "react-router-dom";
 import { Header } from "@/components/Header";
 import { MessageInput } from "@/components/MessageInput";
 import { Sidebar } from "@/components/Sidebar";
+import { useAppealSocket } from "@/hooks/useAppealSocket";
+import { useHouseSocket } from "@/hooks/useHouseSocket";
 import { fetchHouseAppeals, createAppeal } from "@/store/appeals/appeals.slice";
 import { fetchAppealMessages, sendAppealMessage } from "@/store/appealChat/appealChat.slice";
 import { fetchHouseMessages, sendHouseMessage } from "@/store/houseChat/houseChat.slice";
@@ -11,7 +13,6 @@ import { fetchUserHouses, selectHouse } from "@/store/houses/houses.slice";
 import type { House } from "@/store/houses/houses.types";
 import { initCurrentUser } from "@/store/user/user.slice";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
-import { useChatSocket } from "@/hooks/useChatSocket";
 
 import styles from "./Chat.module.scss";
 import {
@@ -96,17 +97,17 @@ export function ChatPage() {
 
 	const houseId = houseIdParam ?? (selectedHouse ? String(selectedHouse.id) : undefined);
 	const isHouseChat = !appealId;
-	const socketKind = isHouseChat ? "house" : "appeal";
-	const socketChatId = isHouseChat
-		? (selectedHouse?.id ?? null)
-		: appealId && Number.isFinite(Number(appealId))
-			? Number(appealId)
-			: null;
-	const { sendRead } = useChatSocket({
-		kind: socketChatId != null ? socketKind : null,
-		chatId: socketChatId,
+	const appealChatId = appealId && Number.isFinite(Number(appealId)) ? Number(appealId) : null;
+	const { sendRead: sendHouseRead } = useHouseSocket({
+		houseId: selectedHouse?.id ?? null,
+		userId: currentUser?.id ?? null,
+		listenChat: isHouseChat,
+	});
+	const { sendRead: sendAppealRead } = useAppealSocket({
+		appealId: isHouseChat ? null : appealChatId,
 		userId: currentUser?.id ?? null,
 	});
+	const sendRead = isHouseChat ? sendHouseRead : sendAppealRead;
 	const visibleHouseMessages =
 		isHouseChat && houseId != null && houseChatHouseId === Number(houseId) ? houseMessages : [];
 	const visibleAppealMessages =
