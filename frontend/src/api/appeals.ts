@@ -18,6 +18,24 @@ export type AppealDetail = Appeal & {
 };
 
 /**
+ * Создание обращения
+ * @param payload - текст, user_id, house_id
+ */
+export function createAppeal(payload: {
+	text: string;
+	user_id: number;
+	house_id: number;
+	attachments?: string[];
+}): Promise<AppealDetail> {
+	return apiPost<AppealDetail>("/appeals/create", {
+		text: payload.text,
+		user_id: payload.user_id,
+		house_id: payload.house_id,
+		attachments: payload.attachments ?? [],
+	});
+}
+
+/**
  * Сообщения чата обращения
  * @param appealId - id обращения
  */

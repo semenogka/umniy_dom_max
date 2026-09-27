@@ -4,7 +4,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { Header } from "@/components/Header";
 import { MessageInput } from "@/components/MessageInput";
 import { Sidebar } from "@/components/Sidebar";
-import { fetchHouseAppeals } from "@/store/appeals/appeals.slice";
+import { fetchHouseAppeals, createAppeal } from "@/store/appeals/appeals.slice";
 import { fetchAppealMessages, sendAppealMessage } from "@/store/appealChat/appealChat.slice";
 import { fetchHouseMessages, sendHouseMessage } from "@/store/houseChat/houseChat.slice";
 import { fetchUserHouses, selectHouse } from "@/store/houses/houses.slice";
@@ -26,6 +26,8 @@ import { ChatSidebar } from "./components/ChatSidebar";
 import { HousePickerSidebar } from "./components/HousePickerSidebar";
 import { MessageList } from "./components/MessageList";
 import { NewAppealSidebar } from "./components/NewAppealSidebar";
+import { buildAppealText } from "./components/NewAppealSidebar/NewAppealSidebar.service";
+import type { NewAppealFormValues } from "./components/NewAppealSidebar/NewAppealSidebar.types";
 
 const ChatHeader = memo(function ChatHeader({
 	chat,
@@ -243,6 +245,31 @@ export function ChatPage() {
 	}, []);
 
 	/**
+	 * Создание обращения и переход в его чат
+	 * @param values - данные формы
+	 * @returns {void}
+	 */
+	const handleCreateAppeal = useCallback(
+		(values: NewAppealFormValues) => {
+			if (!selectedHouse) return;
+
+			dispatch(
+				createAppeal({
+					houseId: selectedHouse.id,
+					text: buildAppealText(values),
+				}),
+			)
+				.unwrap()
+				.then((appeal) => {
+					setNewAppealOpen(false);
+					navigate(`/chat/${selectedHouse.id}/${appeal.id}`);
+				})
+				.catch(() => undefined);
+		},
+		[dispatch, navigate, selectedHouse],
+	);
+
+	/**
 	 * Открытие пикера дома
 	 * @returns {void}
 	 */
@@ -358,6 +385,7 @@ export function ChatPage() {
 						key="new-appeal"
 						homeContext={newAppealHomeContext}
 						onClose={handleCloseNewAppeal}
+						onSubmit={handleCreateAppeal}
 					/>
 				)}
 			</Sidebar>

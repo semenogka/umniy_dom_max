@@ -38,3 +38,13 @@ export type AppealsState = {
 	/** Ошибка запроса */
 	error: string | null;
 };
+
+/** Аргумент создания обращения */
+export type CreateAppealArg = {
+	/** Id дома */
+	houseId: number;
+	/** Текст обращения */
+	text: string;
+	/** Вложения (base64) */
+	attachments?: string[];
+};

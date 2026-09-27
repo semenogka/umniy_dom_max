@@ -50,7 +50,6 @@ export function NewAppealSidebar(props: NewAppealSidebarProps) {
 			topicId,
 			description: description.trim(),
 		});
-		onClose?.();
 	};
 
 	return (
