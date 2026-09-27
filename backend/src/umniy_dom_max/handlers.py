@@ -28,9 +28,10 @@ settings = Settings()
 mail = Mail(settings.mail_host, settings.mail_user, settings.mail_password)
 
 status = {
-    "dop": "дополните",
-    "checked": "проверено",
-    "close": "закрыто"
+    "in_progress": "В работе",
+    "dop": "Дополните",
+    "checked": "Проверено",
+    "close": "Закрыто"
 }
 
 @router.post("/users/demo", response_model=UserOut, tags=["Пользователи"],
@@ -151,7 +152,7 @@ async def update_appeal_status(
     return appeal
 
 
-@router.get("/appeals/{appeal_id}", response_model=AppealDetailedOut, tags=["Обращения"],
+@router.get("/appeals/{appeal_id}/messages", response_model=AppealDetailedOut, tags=["Обращения"],
              summary="Получить обращение по ID",
              description="Возвращает детальную информацию об обращении по его ID, включая сообщения.")
 async def get_appeal(appeal_id: int, db: DbSession):
@@ -173,7 +174,7 @@ async def list_appeals_by_house_id(house_id: int, db: DbSession):
 
 @router.post("/appeals/{appeal_id}/message", response_model=MessageOut, tags=["Обращения"],
              summary="Отправить сообщение в обращение",
-             description="Отправляет дополнительное сообщение в существующее обращение. "
+             description="Отправляет дополнительное сообщение в существующее обращение."
                          "Текст проходит классификацию через LLM, результат отправляется на email.")
 async def send_message_appeal(
     appeal_id: int,
@@ -186,7 +187,14 @@ async def send_message_appeal(
     if not appeal:
         raise HTTPException(404, "Обращение не найдено")
     if not appeal.status == "close":
-        raise HTTPException(400, "Обращение закрыто")
+        return await repository.add_appeal_message(
+                db,
+                appeal.id,
+                sender,
+                data.text,
+                data.attachments,
+                bot_text="Данное обращение уже закрыто.",
+            )
     user = await repository.get_user(db, data.user_id)
 
     if not user:
