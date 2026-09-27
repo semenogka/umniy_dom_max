@@ -78,10 +78,9 @@ def main():
                     continue
 
                 data = DemoUserIn(user_id=user_id, chat_id=chat_id, name=name)
-                status = requests.post(
-                    "http://localhost:8000/users/demo", json=data.model_dump()
+                requests.post(
+                    "https://domovoy.stirkk.ru/users/demo", json=data.model_dump()
                 )
-                print(status.status_code, data)
                 send_msg(
                     chat_id,
                     "Вы успешно зарегестрировались в Домовой! Перейдите в мини приложение, чтобы",

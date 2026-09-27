@@ -32,7 +32,7 @@ ResponsibleOrg = Literal[
 
 
 class ClassificationAnswer(BaseModel):
-    result: Literal["N", "Y"]
+    result: Literal["N", "dop", "checked"]
 
 
 class AppealClassification(BaseModel):

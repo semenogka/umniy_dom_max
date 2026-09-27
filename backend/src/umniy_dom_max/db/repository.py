@@ -129,7 +129,7 @@ async def set_appeal_status(
 ) -> None:
     appeal.status = status
     if system_text:
-        db.add(AppealMessage(appeal_id=appeal.id, sender="bot", text=system_text))
+        db.add(AppealMessage(appeal_id=appeal.id, sender_id=0, sender="bot", text=system_text))
     await db.commit()
 
 

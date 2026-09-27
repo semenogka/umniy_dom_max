@@ -18,24 +18,22 @@ mail = Mail(
 
 
 async def check_answer(agent: AnswerAgentDep, db):
+    print("check")
     for msg in mail.read():
         text = mail.get_body(msg)
-
+        print(text)
         try:
             classification = (await agent.run(text)).output
         except Exception as e:
             print(f"LLM error: {e}")
             continue
-
+        
         if classification.result == "N":
             continue
-        if classification.result == "dop":
-            bot_text = "Статус изменен. Запрашивают дополнительные данные для обращения."
-        if classification.result == "checked":
-            bot_text = "Статус изменен. Ваш запрос проверен."
+        
 
         sub = msg["Subject"][4:]
-        print(sub)
+        print(sub, classification.result)
         appeal = await get_appeal_by_mail_subject(db, sub)
 
         if not appeal:
@@ -43,8 +41,8 @@ async def check_answer(agent: AnswerAgentDep, db):
             continue
 
         try:
-            requests.post(
-                f"https://domovoy.stirkk.ru/appeals/{appeal.id}/update",
+            requests.patch(
+                f"https://domovoy.stirkk.ru/{appeal.id}/update",
                 json=StatusIn(status=classification.result, mail_text=text).model_dump(),
                 timeout=30,
             )
@@ -61,7 +59,7 @@ async def mail_checker(agent, sessionmaker):
         except Exception as e:
             print(f"Mail checker error: {e}")
 
-        await asyncio.sleep(30)
+        await asyncio.sleep(10)
 
 
 @asynccontextmanager

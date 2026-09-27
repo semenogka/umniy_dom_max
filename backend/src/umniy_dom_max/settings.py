@@ -2,7 +2,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
-    model_config = SettingsConfigDict(env_file=".env", extra="ignore")
+    model_config = SettingsConfigDict(env_file=".env", extra="ignore", case_sensitive=False)
 
     debug: bool = True
     enable_cors: bool = True
@@ -21,4 +21,4 @@ class Settings(BaseSettings):
 
     mail_host: str = "mail.domovoy.stirkk.ru"
     mail_user: str = "appeals@domovoy.stirkk.ru"
-    mail_password: str = "lBe3MeL0XUTyhoD38x3jlVvjO4Aso9m"
+    mail_password: str = ""

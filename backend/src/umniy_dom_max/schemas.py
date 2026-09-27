@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 class AttachmentOut(BaseModel):
     model_config=ConfigDict(from_attributes=True)
@@ -72,9 +72,10 @@ class AppealDetailedOut(AppealOut):
     messages: list[MessageOut] = []
 
 class UserOut(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
+    model_config = ConfigDict(from_attributes=True, populate_by_name=True)
 
     id: int
+    chat_id: int | None = Field(default=None, alias="max_chat_id")
     name: str
     houses: list[HouseOut] = []
     appeals: list[AppealOut] = []

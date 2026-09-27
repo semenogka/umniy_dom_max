@@ -125,6 +125,12 @@ async def update_appeal_status(
     msg = f"Статус по {appeal_id} изменён: {status[old_status]} → {status[data.status]}."
     if data.status != "close":
         msg += f"Посмотрите ответ по вашему обращению: {data.mail_text}"
+
+    if data.status == "dop":
+        bot_text = "Статус изменен. Запрашивают дополнительные данные для обращения."
+    if data.status == "checked":
+        bot_text = "Статус изменен. Ваш запрос проверен."
+
     await repository.set_appeal_status(
         db,
         appeal,
@@ -142,9 +148,10 @@ async def update_appeal_status(
                 params={"chat_id": chat_id},
                 headers={"Authorization": settings.max_token},
                 json={
-                    "text": f"Статус обращения №{appeal.id} изменён на {status[data.status]}. {data.bot_text}"
+                    "text": f"Статус обращения №{appeal.id} изменён на {status[data.status]}. {data.mail_text}"
                 },
                 timeout=5,
+                verify=False,
             )
         except Exception:  # noqa: BLE001 — уведомление не должно ронять запрос
             logger.exception("не получилось уведомить в бота")
