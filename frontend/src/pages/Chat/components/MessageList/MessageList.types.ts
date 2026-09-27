@@ -30,4 +30,6 @@ export type MessageListSenderGroup = {
 export type SenderGroupProps = {
 	/** Группа сообщений одного отправителя */
 	group: MessageListSenderGroup;
+	/** Открыть вложение в лайтбоксе */
+	onOpenAttachment?: (url: string) => void;
 };

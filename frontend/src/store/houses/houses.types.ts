@@ -17,6 +17,8 @@ export type MessageAttachment = {
 	url: string;
 	/** Порядок */
 	ord: number;
+	/** Локальное имя файла (optimistic) */
+	name?: string;
 };
 
 /** Сообщение чата дома */

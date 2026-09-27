@@ -65,13 +65,7 @@ const ChatMessageInput = memo(function ChatMessageInput({
 	chatId,
 	onSubmit,
 }: ChatMessageInputProps) {
-	/**
-	 * Прикрепление файла к сообщению
-	 * @returns {void}
-	 */
-	const handleAttach = useCallback(() => undefined, []);
-
-	return <MessageInput key={chatId} onSubmit={onSubmit} onAttach={handleAttach} />;
+	return <MessageInput key={chatId} onSubmit={onSubmit} />;
 });
 
 /** Страница чата */
@@ -176,18 +170,26 @@ export function ChatPage() {
 
 	/**
 	 * Отправка сообщения в ленту
-	 * @param text - текст сообщения
+	 * @param payload - текст и вложения
 	 * @returns {void}
 	 */
 	const handleSubmit = useCallback(
-		(text: string) => {
+		(payload: {
+			text: string;
+			attachments: Array<{ dataUrl: string; name: string; mime: string }>;
+		}) => {
 			if (!currentUser) return;
+
+			const { text, attachments } = payload;
+			const attachmentUrls = attachments.map((item) => item.dataUrl);
 
 			if (isHouseChat && selectedHouse) {
 				dispatch(
 					sendHouseMessage({
 						houseId: selectedHouse.id,
 						text,
+						attachments: attachmentUrls,
+						attachmentMeta: attachments,
 						clientId: crypto.randomUUID(),
 						senderId: currentUser.id,
 						senderName: currentUser.name,
@@ -201,6 +203,8 @@ export function ChatPage() {
 					sendAppealMessage({
 						appealId: Number(appealId),
 						text,
+						attachments: attachmentUrls,
+						attachmentMeta: attachments,
 						clientId: crypto.randomUUID(),
 						senderId: currentUser.id,
 						senderName: currentUser.name,

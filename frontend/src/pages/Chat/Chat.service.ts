@@ -2,12 +2,19 @@ import { format, isToday, isYesterday, parseISO } from "date-fns";
 import { ru } from "date-fns/locale";
 
 import { STATUS_META } from "@/components/Status/Status.config";
+import { isImageFile } from "@/components/MessageInput/MessageInput.service";
 import type { Appeal } from "@/store/appeals/appeals.types";
 import type { House, HouseMessage } from "@/store/houses/houses.types";
 import { pluralizeRu } from "@/utils/pluralizeRu";
 
 import { CHAT_TODAY_LABEL, HOUSE_CHAT_TITLE } from "./Chat.config";
-import type { Chat, ChatMessage, ChatSidebarAppealItem, ChatSidebarHouse } from "./Chat.types";
+import type {
+	Chat,
+	ChatAttachment,
+	ChatMessage,
+	ChatSidebarAppealItem,
+	ChatSidebarHouse,
+} from "./Chat.types";
 
 /**
  * Собирает className страницы чата
@@ -40,12 +47,54 @@ function formatMessageDateLabel(iso: string): string {
 }
 
 /**
+ * Имя файла из url / data URL
+ * @param url - url вложения
+ * @param fallbackName - локальное имя
+ */
+function getAttachmentName(url: string, fallbackName?: string): string {
+	if (fallbackName) return fallbackName;
+
+	if (url.startsWith("data:")) {
+		const mime = url.slice(5).split(";")[0] ?? "file";
+		const subtype = mime.split("/")[1] ?? "bin";
+		return `file.${subtype}`;
+	}
+
+	try {
+		const path = new URL(url).pathname;
+		const name = path.split("/").pop();
+		if (name) return decodeURIComponent(name);
+	} catch {
+		/* ignore */
+	}
+
+	return "Файл";
+}
+
+/**
+ * Вложение API → вложение ленты
+ * @param url - url
+ * @param name - имя
+ */
+function toChatAttachment(url: string, name?: string): ChatAttachment {
+	return {
+		url,
+		name: getAttachmentName(url, name),
+		isImage: isImageFile(url),
+	};
+}
+
+/**
  * Сообщение API → сообщение ленты
  * @param message - сообщение с бэка
  * @param currentUserId - id текущего пользователя MAX
  */
 export function toChatMessage(message: HouseMessage, currentUserId?: number | null): ChatMessage {
 	const isOut = currentUserId != null && message.sender_id === currentUserId;
+	const attachments = [...(message.attachments ?? [])]
+		.sort((a, b) => a.ord - b.ord)
+		.filter((item) => Boolean(item.url))
+		.map((item) => toChatAttachment(item.url, item.name));
 
 	return {
 		id: message.clientId ?? String(message.id),
@@ -55,6 +104,7 @@ export function toChatMessage(message: HouseMessage, currentUserId?: number | nu
 		time: formatMessageTime(message.created_at),
 		dateLabel: formatMessageDateLabel(message.created_at),
 		delivery: isOut ? (message.delivery ?? "sent") : undefined,
+		attachments: attachments.length ? attachments : undefined,
 	};
 }
 

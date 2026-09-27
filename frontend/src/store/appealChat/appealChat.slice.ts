@@ -46,6 +46,10 @@ type SendAppealMessageArg = {
 	appealId: number;
 	/** Текст сообщения */
 	text: string;
+	/** Вложения (base64 / data URL) */
+	attachments?: string[];
+	/** Метаданные вложений для optimistic UI */
+	attachmentMeta?: Array<{ dataUrl: string; name: string; mime: string }>;
 	/** Локальный id для оптимистичного UI */
 	clientId: string;
 	/** Id отправителя (MAX) */
@@ -71,6 +75,7 @@ export const sendAppealMessage = createAsyncThunk(
 			const message = await sendAppealMessageRequest(payload.appealId, {
 				text: payload.text,
 				user_id: userId,
+				attachments: payload.attachments,
 			});
 
 			return { clientId: payload.clientId, message };
@@ -126,7 +131,14 @@ const appealChatSlice = createSlice({
 			})
 			/** Оптимистичное сообщение в pending */
 			.addCase(sendAppealMessage.pending, (state, action) => {
-				const { clientId, text, senderId, senderName } = action.meta.arg;
+				const {
+					clientId,
+					text,
+					senderId,
+					senderName,
+					attachments = [],
+					attachmentMeta,
+				} = action.meta.arg;
 
 				state.messages.push({
 					id: Date.now(),
@@ -135,7 +147,12 @@ const appealChatSlice = createSlice({
 					sender: senderName,
 					text,
 					created_at: new Date().toISOString(),
-					attachments: [],
+					attachments: attachments.map((url, index) => ({
+						id: index,
+						url,
+						ord: index,
+						name: attachmentMeta?.[index]?.name,
+					})),
 					delivery: "pending",
 				});
 			})

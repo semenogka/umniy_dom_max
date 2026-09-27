@@ -43,6 +43,10 @@ type SendHouseMessageArg = {
 	houseId: number;
 	/** Текст сообщения */
 	text: string;
+	/** Вложения (base64 / data URL) */
+	attachments?: string[];
+	/** Метаданные вложений для optimistic UI */
+	attachmentMeta?: Array<{ dataUrl: string; name: string; mime: string }>;
 	/** Локальный id для оптимистичного UI */
 	clientId: string;
 	/** Id отправителя (MAX) */
@@ -68,6 +72,7 @@ export const sendHouseMessage = createAsyncThunk(
 			const message = await sendHouseMessageRequest(payload.houseId, {
 				text: payload.text,
 				user_id: userId,
+				attachments: payload.attachments,
 			});
 
 			return { clientId: payload.clientId, message };
@@ -123,7 +128,14 @@ const houseChatSlice = createSlice({
 			})
 			/** Оптимистичное сообщение в pending */
 			.addCase(sendHouseMessage.pending, (state, action) => {
-				const { clientId, text, senderId, senderName } = action.meta.arg;
+				const {
+					clientId,
+					text,
+					senderId,
+					senderName,
+					attachments = [],
+					attachmentMeta,
+				} = action.meta.arg;
 
 				state.messages.push({
 					id: Date.now(),
@@ -132,7 +144,12 @@ const houseChatSlice = createSlice({
 					sender: senderName,
 					text,
 					created_at: new Date().toISOString(),
-					attachments: [],
+					attachments: attachments.map((url, index) => ({
+						id: index,
+						url,
+						ord: index,
+						name: attachmentMeta?.[index]?.name,
+					})),
 					delivery: "pending",
 				});
 			})

@@ -82,6 +82,50 @@
 	max-width: 100%;
 }
 
+.attachment {
+	display: block;
+	width: 100%;
+	margin: 0;
+	padding: 0;
+	border: 0;
+	background: none;
+	cursor: pointer;
+	text-align: left;
+}
+
+.file {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	box-sizing: border-box;
+	width: 100%;
+	max-width: 100%;
+	margin: 2px 0 6px;
+	padding: 8px 10px;
+	border: 1px solid var(--border);
+	border-radius: var(--radius-md);
+	background: var(--bg-subtle);
+	color: var(--fg);
+	text-decoration: none;
+	cursor: pointer;
+}
+
+.fileIcon {
+	display: flex;
+	flex: 0 0 auto;
+	color: var(--accent);
+}
+
+.fileName {
+	min-width: 0;
+	overflow: hidden;
+	font-size: var(--text-caption-s-strong-size);
+	font-weight: var(--text-caption-s-strong-weight);
+	line-height: var(--text-caption-s-strong-line);
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
 .avatarCol {
 	display: flex;
 	flex-direction: column;
