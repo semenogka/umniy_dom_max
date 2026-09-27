@@ -1,3 +1,5 @@
+import type { ChatSidebarAppealItem } from "../../Chat.types";
+
 /** Пропсы ChatSidebar */
 export type ChatSidebarProps = {
 	/** Id активного чата */
@@ -6,6 +8,8 @@ export type ChatSidebarProps = {
 	houseAddress: string;
 	/** Мета выбранного дома */
 	houseMeta: string;
+	/** Обращения дома */
+	appeals: ChatSidebarAppealItem[];
 	/** Выбор чата */
 	onSelectChat?: (chatId: string) => void;
 	/** Открыть форму нового обращения */

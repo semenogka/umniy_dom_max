@@ -10,7 +10,7 @@ const meta = {
 		type: "appeal",
 		title: "Протечка",
 		subtitle: "В работе",
-		status: "in-progress",
+		status: "in_progress",
 		badgeCount: 1,
 	},
 	decorators: [
@@ -37,10 +37,10 @@ export const Conversation: Story = {
 	},
 };
 
-export const Executed: Story = {
+export const Checked: Story = {
 	args: {
 		title: "Горячая вода",
-		subtitle: "Исполнено",
-		status: "executed",
+		subtitle: "Проверено",
+		status: "checked",
 	},
 };

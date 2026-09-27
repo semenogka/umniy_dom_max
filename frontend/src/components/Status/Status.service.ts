@@ -2,9 +2,10 @@ import type { StatusValue } from "./Status.types";
 
 /** Имя CSS-класса статуса в модуле */
 const STATUS_CLASS: Record<StatusValue, string> = {
-	"in-progress": "inProgress",
-	executed: "executed",
-	closed: "closed",
+	in_progress: "inProgress",
+	dop: "dop",
+	checked: "checked",
+	close: "close",
 };
 
 /**

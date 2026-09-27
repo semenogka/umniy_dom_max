@@ -1,4 +1,4 @@
-import type { HeaderStatus } from "./Header.types";
+import type { StatusValue } from "@/components/Status/Status.types";
 
 /**
  * Собирает className Header
@@ -16,11 +16,11 @@ export function getHeaderClassName(styles: Record<string, string>, className?: s
  */
 export function getHeaderStatusClassName(
 	styles: Record<string, string>,
-	status?: HeaderStatus,
+	status?: StatusValue,
 ): string {
-	if (!status || status === "in-progress") return styles.statusDot;
+	if (!status || status === "in_progress" || status === "dop") return styles.statusDot;
 
-	if (status === "executed") return [styles.statusDot, styles.statusExecuted].join(" ");
+	if (status === "checked") return [styles.statusDot, styles.statusChecked].join(" ");
 
-	return [styles.statusDot, styles.statusClosed].join(" ");
+	return [styles.statusDot, styles.statusClose].join(" ");
 }

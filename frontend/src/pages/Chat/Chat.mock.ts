@@ -1,4 +1,4 @@
-import type { ChatMock, ChatSidebarAppealItem } from "./Chat.types";
+import type { ChatMock } from "./Chat.types";
 
 const AVATAR_DOMOVOY = "/favicon.svg";
 const AVATAR_ELENA = "https://i.pravatar.cc/60?u=elena-sokolova";
@@ -13,7 +13,7 @@ export const APPEAL_CHAT_MOCK: ChatMock = {
 	headerType: "appeal",
 	title: "Протечка",
 	subtitle: "В работе",
-	status: "in-progress",
+	status: "in_progress",
 	badgeCount: 1,
 	sidebarMeta: "В работе · 12:24",
 	number: "1842",
@@ -173,9 +173,9 @@ export const LIGHT_APPEAL_CHAT_MOCK: ChatMock = {
 	type: "appeal",
 	headerType: "appeal",
 	title: "Не горит свет на этаже",
-	subtitle: "Ждёт подтверждения",
-	status: "executed",
-	sidebarMeta: "Ждёт подтверждения",
+	subtitle: "Проверено",
+	status: "checked",
+	sidebarMeta: "Проверено",
 	number: "1901",
 	operator: {
 		name: "Елена Соколова",
@@ -220,7 +220,7 @@ export const WATER_APPEAL_CHAT_MOCK: ChatMock = {
 	headerType: "appeal",
 	title: "Перебои с горячей водой",
 	subtitle: "Закрыто",
-	status: "closed",
+	status: "close",
 	sidebarMeta: "Закрыто · 12 сент.",
 	number: "1755",
 	operator: {
@@ -566,18 +566,6 @@ export const CHAT_MOCKS: Record<string, ChatMock> = {
 	[WATER_APPEAL_CHAT_MOCK.id]: WATER_APPEAL_CHAT_MOCK,
 	[CONVERSATION_CHAT_MOCK.id]: CONVERSATION_CHAT_MOCK,
 };
-
-/** Обращения в сайдбаре */
-export const CHAT_SIDEBAR_APPEALS: ChatSidebarAppealItem[] = [
-	APPEAL_CHAT_MOCK,
-	LIGHT_APPEAL_CHAT_MOCK,
-	WATER_APPEAL_CHAT_MOCK,
-].map((chat) => ({
-	id: chat.id,
-	title: chat.id === APPEAL_CHAT_MOCK.id ? "Протечка в подъезде" : chat.title,
-	meta: chat.sidebarMeta ?? chat.subtitle,
-	status: chat.status ?? "in-progress",
-}));
 
 /** Чат по умолчанию */
 export const DEFAULT_CHAT_ID = CONVERSATION_CHAT_MOCK.id;

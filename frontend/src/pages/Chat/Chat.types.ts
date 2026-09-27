@@ -1,4 +1,5 @@
-import type { HeaderStatus, HeaderType } from "@/components/Header/Header.types";
+import type { HeaderType } from "@/components/Header/Header.types";
+import type { StatusValue } from "@/components/Status/Status.types";
 import type { MessageDelivery, MessageKind } from "@/components/Message/Message.types";
 
 /** Тип чата */
@@ -37,7 +38,7 @@ export type ChatMock = {
 	/** Подзаголовок */
 	subtitle: string;
 	/** Статус заявки */
-	status?: HeaderStatus;
+	status?: StatusValue;
 	/** Счётчик уведомлений */
 	badgeCount?: number;
 	/** Мета в списке сайдбара */
@@ -81,7 +82,7 @@ export type ChatSidebarAppealItem = {
 	/** Подпись статуса / времени */
 	meta: string;
 	/** Статус заявки */
-	status: HeaderStatus;
+	status: StatusValue;
 };
 
 /** Пропсы шапки страницы чата */
