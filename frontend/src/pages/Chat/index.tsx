@@ -25,6 +25,7 @@ import {
 import type { ChatHeaderProps, ChatMessageInputProps } from "./Chat.types";
 import { AppealDetailsSidebar } from "./components/AppealDetailsSidebar";
 import { ChatSidebar } from "./components/ChatSidebar";
+import { HouseInfoSidebar } from "./components/HouseInfoSidebar";
 import { HousePickerSidebar } from "./components/HousePickerSidebar";
 import { MessageList } from "./components/MessageList";
 import { NewAppealSidebar } from "./components/NewAppealSidebar";
@@ -34,30 +35,17 @@ import type { NewAppealFormValues } from "./components/NewAppealSidebar/NewAppea
 const ChatHeader = memo(function ChatHeader({
 	chat,
 	onMenuClick,
+	onHouseClick,
 	onSummaryClick,
 }: ChatHeaderProps) {
-	/**
-	 * Клик по иконке дома в шапке
-	 * @returns {void}
-	 */
-	const handleHouseClick = useCallback(() => undefined, []);
-
-	/**
-	 * Клик по уведомлениям в шапке
-	 * @returns {void}
-	 */
-	const handleNotificationsClick = useCallback(() => undefined, []);
-
 	return (
 		<Header
 			type={chat.headerType}
 			title={chat.title}
 			subtitle={chat.subtitle}
 			status={chat.status}
-			badgeCount={chat.badgeCount}
 			onMenuClick={onMenuClick}
-			onHouseClick={handleHouseClick}
-			onNotificationsClick={handleNotificationsClick}
+			onHouseClick={onHouseClick}
 			onSummaryClick={onSummaryClick}
 		/>
 	);
@@ -92,6 +80,7 @@ export function ChatPage() {
 	const [sidebarOpen, setSidebarOpen] = useState(false);
 	const [newAppealOpen, setNewAppealOpen] = useState(false);
 	const [housePickerOpen, setHousePickerOpen] = useState(false);
+	const [houseInfoOpen, setHouseInfoOpen] = useState(false);
 	const [appealDetailsOpen, setAppealDetailsOpen] = useState(false);
 	const [actRequestedByChat, setActRequestedByChat] = useState<Record<string, boolean>>({});
 	/** WS дома после appeals (messages не блокируют) */
@@ -384,6 +373,23 @@ export function ChatPage() {
 	}, []);
 
 	/**
+	 * Открытие сведений о доме
+	 * @returns {void}
+	 */
+	const handleOpenHouseInfo = useCallback(() => {
+		if (!selectedHouse) return;
+		setHouseInfoOpen(true);
+	}, [selectedHouse]);
+
+	/**
+	 * Закрытие сведений о доме
+	 * @returns {void}
+	 */
+	const handleCloseHouseInfo = useCallback(() => {
+		setHouseInfoOpen(false);
+	}, []);
+
+	/**
 	 * Выбор дома в пикере
 	 * @param house - выбранный дом
 	 * @returns {void}
@@ -453,6 +459,7 @@ export function ChatPage() {
 			<ChatHeader
 				chat={chat}
 				onMenuClick={handleOpenSidebar}
+				onHouseClick={handleOpenHouseInfo}
 				onSummaryClick={handleOpenAppealDetails}
 			/>
 
@@ -495,6 +502,16 @@ export function ChatPage() {
 						selectedHouse={selectedHouse}
 						onSelectHouse={handleSelectHouse}
 						onClose={handleCloseHousePicker}
+					/>
+				)}
+			</Sidebar>
+
+			<Sidebar direction="bottom" open={houseInfoOpen} onClose={handleCloseHouseInfo}>
+				{houseInfoOpen && selectedHouse && (
+					<HouseInfoSidebar
+						key={`house-info:${selectedHouse.id}`}
+						address={selectedHouse.address}
+						onClose={handleCloseHouseInfo}
 					/>
 				)}
 			</Sidebar>

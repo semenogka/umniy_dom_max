@@ -14,16 +14,12 @@ export type HeaderProps = {
 	subtitle?: ReactNode;
 	/** Статус для точки в appeal */
 	status?: StatusValue;
-	/** Счётчик уведомлений */
-	badgeCount?: number;
 	/** Клик по центру */
 	onSummaryClick?: () => void;
 	/** Клик по меню */
 	onMenuClick?: () => void;
 	/** Клик по дому */
 	onHouseClick?: () => void;
-	/** Клик по уведомлениям */
-	onNotificationsClick?: () => void;
 	/** Дополнительный класс */
 	className?: string;
 } & Omit<ComponentPropsWithoutRef<"header">, "title" | "children">;

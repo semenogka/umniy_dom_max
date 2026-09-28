@@ -1,4 +1,3 @@
-import { Badge } from "@/components/Badge";
 import { Button } from "@/components/Button";
 import { Icon } from "@/components/Icon";
 
@@ -14,11 +13,9 @@ export function Header(props: HeaderProps) {
 		title,
 		subtitle,
 		status = "in_progress",
-		badgeCount,
 		onSummaryClick,
 		onMenuClick,
 		onHouseClick,
-		onNotificationsClick,
 		className,
 		...rest
 	} = props;
@@ -65,17 +62,6 @@ export function Header(props: HeaderProps) {
 			<div className={styles.actions}>
 				<Button variant="icon" aria-label="Информация о доме" onClick={onHouseClick}>
 					<Icon name="building" size="xl" />
-				</Button>
-
-				<Button
-					variant="icon"
-					className={styles.notification}
-					aria-label={badgeCount ? `Уведомления, ${badgeCount} новых` : "Уведомления"}
-					onClick={onNotificationsClick}
-				>
-					<Icon name="bell" size="xl" />
-
-					{Boolean(badgeCount) && <Badge className={styles.badge}>{badgeCount}</Badge>}
 				</Button>
 			</div>
 		</header>

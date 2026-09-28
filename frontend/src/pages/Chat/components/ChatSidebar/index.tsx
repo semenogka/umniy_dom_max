@@ -1,11 +1,6 @@
 import { Button } from "@/components/Button";
 import { Icon } from "@/components/Icon";
 import { STATUS_META } from "@/components/Status/Status.config";
-import {
-	CHAT_SIDEBAR_RESIDENTS_META,
-	CHAT_SIDEBAR_SUPPORT_META,
-	CHAT_SIDEBAR_SUPPORT_TITLE,
-} from "./ChatSidebar.config";
 import styles from "./ChatSidebar.module.scss";
 import {
 	getChatSidebarClassName,
@@ -73,7 +68,7 @@ export function ChatSidebar(props: ChatSidebarProps) {
 						.filter(Boolean)
 						.join(" ")}
 					aria-current={residentsActive ? "page" : undefined}
-					aria-label={`Чат жителей дома, ${CHAT_SIDEBAR_RESIDENTS_META}`}
+					aria-label="Чат жителей дома"
 					onClick={onSelectResidents}
 				>
 					<span className={styles.residentsIcon} aria-hidden>
@@ -82,8 +77,6 @@ export function ChatSidebar(props: ChatSidebarProps) {
 
 					<span className={styles.residentsCopy}>
 						<strong className={styles.residentsTitle}>Чат жителей дома</strong>
-
-						<span className={styles.residentsMeta}>{CHAT_SIDEBAR_RESIDENTS_META}</span>
 					</span>
 
 					<Icon name="pin" size="md" className={styles.residentsPin} />
@@ -119,28 +112,6 @@ export function ChatSidebar(props: ChatSidebarProps) {
 					);
 				})}
 			</nav>
-
-			<div className={styles.support}>
-				<button
-					type="button"
-					className={styles.supportItem}
-					aria-label={CHAT_SIDEBAR_SUPPORT_TITLE}
-				>
-					<span className={styles.supportIdentity} aria-hidden>
-						<img className={styles.supportMark} src="/favicon.svg" alt="" />
-
-						<span className={styles.supportBadge}>
-							<Icon name="headset" size={11} />
-						</span>
-					</span>
-
-					<span className={styles.itemCopy}>
-						<strong className={styles.itemTitle}>{CHAT_SIDEBAR_SUPPORT_TITLE}</strong>
-
-						<span className={styles.itemMeta}>{CHAT_SIDEBAR_SUPPORT_META}</span>
-					</span>
-				</button>
-			</div>
 		</div>
 	);
 }

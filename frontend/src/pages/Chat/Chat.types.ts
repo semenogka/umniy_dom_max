@@ -107,6 +107,8 @@ export type ChatHeaderProps = {
 	chat: Chat;
 	/** Открытие сайдбара */
 	onMenuClick: () => void;
+	/** Открытие сведений о доме */
+	onHouseClick?: () => void;
 	/** Открытие сведений о заявке */
 	onSummaryClick?: () => void;
 };

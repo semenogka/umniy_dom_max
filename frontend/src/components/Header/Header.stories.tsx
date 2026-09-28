@@ -11,7 +11,6 @@ const meta = {
 		title: "Протечка",
 		subtitle: "В работе",
 		status: "in_progress",
-		badgeCount: 1,
 	},
 	decorators: [
 		(Story) => (
@@ -32,8 +31,7 @@ export const Conversation: Story = {
 	args: {
 		type: "conversation",
 		title: "Чат жителей дома",
-		subtitle: "128 участников",
-		badgeCount: 0,
+		subtitle: "Общий чат",
 	},
 };
 
