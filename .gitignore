@@ -4,6 +4,7 @@ venv/
 .venv/
 .claude
 .codex
+.idea
 
 # Frontend
 frontend/node_modules/
