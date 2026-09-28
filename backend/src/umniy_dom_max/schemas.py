@@ -1,6 +1,16 @@
 from datetime import datetime
 
+from typing import Literal
+
 from pydantic import BaseModel, ConfigDict, Field
+
+Status = Literal["in_progress", "dop", "checked", "close"]
+STATUS_LABELS: dict[str, str] = {
+    "in_progress": "В работе",
+    "dop": "Дополните",
+    "checked": "Проверено",
+    "close": "Закрыто",
+}
 
 class AttachmentOut(BaseModel):
     model_config=ConfigDict(from_attributes=True)
@@ -15,7 +25,7 @@ class AppealIn(BaseModel):
     attachments: list[str] = []
 
 class StatusIn(BaseModel):
-    status: str
+    status: Status
     mail_text: str
 
 

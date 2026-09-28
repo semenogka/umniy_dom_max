@@ -24,3 +24,5 @@ class Settings(BaseSettings):
     mail_host: str = "mail.domovoy.stirkk.ru"
     mail_user: str = "appeals@domovoy.stirkk.ru"
     mail_password: str = ""
+    # Куда уходят письма с обращениями
+    mail_to: str = "akuninsemen79@gmail.com"

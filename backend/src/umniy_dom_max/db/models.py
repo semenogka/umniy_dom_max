@@ -94,8 +94,9 @@ class Appeal(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     text = Column(Text, nullable=False)
-    status = Column(String, default="новое")
+    status = Column(String, default="in_progress")
     author_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    house_id = Column(ForeignKey("houses.id"), index=True, nullable=False)
     appeal_address = Column(String, nullable=True)
     organization = Column(String, nullable=True)
 
@@ -117,4 +118,5 @@ class Appeal(Base):
     )
 
     author = relationship("User", back_populates="appeals")
+    house = relationship("House")
     mail_subject = Column(String, nullable=False)

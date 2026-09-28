@@ -8,6 +8,7 @@ from loguru import logger
 
 from umniy_dom_max.db import repository
 from umniy_dom_max.db.database import create_engine, create_sessionmaker
+from umniy_dom_max.schemas import STATUS_LABELS
 from umniy_dom_max.settings import Settings
 
 main_attachment = [
@@ -59,7 +60,7 @@ def main():
     session.verify = False
     session.headers.update({"Authorization": settings.max_token})
 
-    print(json.dumps(session.get(f"{api}/me").json(), ensure_ascii=False, indent=2))
+    logger.info("MAX /me: {}", json.dumps(session.get(f"{api}/me").json(), ensure_ascii=False))
 
     def send_msg(chat_id, text, attachment=None):
         body = {"text": text}
@@ -75,7 +76,7 @@ def main():
             f"{api}/updates", params={"marker": marker}, timeout=35
         ).json()
         if "code" in resp:
-            print(json.dumps(resp, ensure_ascii=False, indent=2))
+            logger.error("MAX /updates: {}", json.dumps(resp, ensure_ascii=False))
             break
         marker = resp.get("marker")
         for update in resp.get("updates", []):
@@ -104,7 +105,7 @@ def main():
                     continue
                 send_msg(
                     chat_id,
-                    "Вы успешно зарегестрировались в Домовой! Перейдите в мини приложение, чтобы",
+                    "Вы успешно зарегистрировались в Домовом! Перейдите в мини-приложение, чтобы оставить обращение.",
                     attachment=main_attachment,
                 )
 
@@ -128,17 +129,10 @@ def main():
                         send_msg(chat_id, "У вас пока нет обращений.")
                         continue
 
-                    status_map = {
-                        "in_progress": "В работе",
-                        "dop": "Дополните",
-                        "checked": "Проверено",
-                        "close": "Закрыто",
-                    }
                     lines = ["Ваши обращения:", ""]
                     for a in appeals:
-                        status = status_map.get(a.status, a.status)
-                        if status != "close":
-                            lines.append(f"№{a.id} — {status}")
+                        if a.status != "close":
+                            lines.append(f"№{a.id} — {STATUS_LABELS.get(a.status, a.status)}")
                             if a.problem_type:
                                 lines.append(f"  Тип: {a.problem_type}")
                             if a.appeal_address:

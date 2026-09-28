@@ -103,6 +103,7 @@ flowchart LR
 | `MAX_TOKEN` | для бота | токен бота MAX; без него контейнер `bot` падает и перезапускается |
 | `MAIL_PASSWORD` | для создания обращений | пароль ящика, с которого уходят письма в УК |
 | `MAIL_HOST`, `MAIL_USER` | нет | почтовый сервер и ящик, по умолчанию `mail.domovoy.stirkk.ru` |
+| `MAIL_TO` | нет | адрес УК, куда уходят обращения |
 | `GPT_BASE_URL`, `GPT_MODEL` | нет | адрес OpenAI-совместимого API и модель |
 | `MAX_API_URL` | нет | по умолчанию `https://platform-api2.max.ru` |
 | `DATABASE_URL` | нет | в Compose всегда указывает на контейнер `postgres` |

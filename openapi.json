@@ -1117,6 +1117,12 @@
         "properties": {
           "status": {
             "type": "string",
+            "enum": [
+              "in_progress",
+              "dop",
+              "checked",
+              "close"
+            ],
             "title": "Status"
           },
           "mail_text": {

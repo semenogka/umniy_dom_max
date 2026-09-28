@@ -2,7 +2,6 @@ from collections.abc import Sequence
 
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
-import asyncio
 from sqlalchemy.orm import selectinload
 
 from umniy_dom_max.db.models import (
@@ -51,13 +50,11 @@ async def create_user(
 # обращения
 
 
-async def get_appeal(db: AsyncSession, appeal_id: str) -> Appeal | None:
+async def get_appeal(db: AsyncSession, appeal_id: int) -> Appeal | None:
     return await db.get(Appeal, appeal_id)
 
-async def get_appeal_by_mail_subject(db: AsyncSession, mail_subject: int) -> Appeal | None:
-    return await db.scalar(
-        select(Appeal).where(Appeal.mail_subject == mail_subject)
-    )
+async def get_appeal_by_mail_subject(db: AsyncSession, subject: str) -> Appeal | None:
+    return await db.scalar(select(Appeal).where(Appeal.mail_subject == subject))
 
 async def get_appeal_detailed(db: AsyncSession, appeal_id: int) -> Appeal | None:
     return await db.scalar(
@@ -66,16 +63,11 @@ async def get_appeal_detailed(db: AsyncSession, appeal_id: int) -> Appeal | None
 
 
 async def list_appeals_by_house_id(db: AsyncSession, house_id: int) -> list[Appeal]:
-    house = await get_house(db, house_id)
-    if not house:
-        return []
-    
     query = (
         select(Appeal)
-        .where(Appeal.appeal_address == house.address)
+        .where(Appeal.house_id == house_id)
         .order_by(Appeal.created_at.desc())
     )
-
     return list(await db.scalars(query))
 
 
@@ -95,7 +87,7 @@ async def list_user_appeals(
 async def create_appeal(
     db: AsyncSession,
     author_id: int,
-    address: str,
+    house: House,
     text: str,
     attachments: list[str],
     classification: AppealClassification,
@@ -107,7 +99,8 @@ async def create_appeal(
         text=text,
         status="in_progress",
         author_id=author_id,
-        appeal_address=address,
+        house_id=house.id,
+        appeal_address=house.address,
         organization=classification.responsible_org,
         problem_type=classification.problem_type,
         urgency=classification.urgency,
@@ -148,15 +141,19 @@ async def add_appeal_message(
     text: str,
     attachments: list[str],
     bot_text: str,
-) -> AppealMessage:
-    msg = await _add_appeal_message(
-        db, appeal_id, sender_id, sender, text, attachments
-    )
+) -> list[AppealMessage]:
+    """Сообщение жителя и ответ бота, в порядке создания."""
+    ids = [(await _add_appeal_message(db, appeal_id, sender_id, sender, text, attachments)).id]
     if bot_text:
-        await _add_appeal_message(db, appeal_id, 0, "bot", bot_text)
+        ids.append((await _add_appeal_message(db, appeal_id, 0, "bot", bot_text)).id)
     await db.commit()
-    query = select(AppealMessage).where(AppealMessage.id == msg.id).options(selectinload(AppealMessage.attachments))
-    return await db.scalar(query)
+    query = (
+        select(AppealMessage)
+        .where(AppealMessage.id.in_(ids))
+        .options(selectinload(AppealMessage.attachments))
+        .order_by(AppealMessage.id)
+    )
+    return list(await db.scalars(query))
 
 async def _add_appeal_message(
     db: AsyncSession,
@@ -273,7 +270,3 @@ async def mark_appeal_messages_read(
         db, AppealMessage, AppealMessage.appeal_id, appeal_id, reader_id, message_ids
     )
 
-
-async def get_appeal_by_mail_subject(db: AsyncSession, subject: str) -> Appeal | None:
-    """Находит обращение по теме письма (mail_subject)."""
-    return await db.scalar(select(Appeal).where(Appeal.mail_subject == subject))

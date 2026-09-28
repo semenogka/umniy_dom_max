@@ -1,10 +1,12 @@
 import base64
-import smtplib
-import imaplib
 import email
+import html as html_mod
+import imaplib
+import re
+import smtplib
 from email.message import EmailMessage
 from email.policy import default
-import re
+
 
 class Mail:
     def __init__(self, host: str, user: str, password: str):
@@ -47,44 +49,39 @@ class Mail:
             smtp.send_message(msg)
         return msg["Message-ID"]
 
-    # возвращает непрочитанные письма и помечает их прочитанными
-    def read(self) -> list[EmailMessage]:
+    # возвращает непрочитанные письма с UID, не помечая их прочитанными (BODY.PEEK)
+    def read(self) -> list[tuple[bytes, EmailMessage]]:
         with imaplib.IMAP4_SSL(self.host) as imap:
             imap.login(self.user, self.password)
             imap.select("INBOX")
-            _, data = imap.search(None, "UNSEEN")
+            _, data = imap.uid("search", None, "UNSEEN")
             messages = []
-            for num in data[0].split():
-                _, raw = imap.fetch(num, "(RFC822)")
-                messages.append(email.message_from_bytes(raw[0][1], policy=default))
+            for uid in data[0].split():
+                _, raw = imap.uid("fetch", uid, "(BODY.PEEK[])")
+                messages.append((uid, email.message_from_bytes(raw[0][1], policy=default)))
             return messages
 
-    def get_body(self, msg: EmailMessage) -> str:
-        """Извлекает текст из письма."""
-        if msg.is_multipart():
-            for part in msg.walk():
-                if part.get_content_type() == "text/plain":
-                    return part.get_payload(decode=True).decode("utf-8", errors="ignore")
-        else:
-            return msg.get_payload(decode=True).decode("utf-8", errors="ignore")
-        return ""
-
+    def mark_seen(self, uids: list[bytes]) -> None:
+        if not uids:
+            return
+        with imaplib.IMAP4_SSL(self.host) as imap:
+            imap.login(self.user, self.password)
+            imap.select("INBOX")
+            imap.uid("store", b",".join(uids), "+FLAGS", "(\\Seen)")
 
     def html_to_text(self, html: str) -> str:
-            # убираем <script>/<style> вместе с содержимым
-            html = re.sub(r"<(script|style)[^>]*>.*?</\1>", "", html, flags=re.S | re.I)
-            # <br>, </p> → перевод строки
-            html = re.sub(r"<br\s*/?>", "\n", html, flags=re.I)
-            html = re.sub(r"</p>", "\n\n", html, flags=re.I)
-            # снимаем все остальные теги
-            html = re.sub(r"<[^>]+>", "", html)
-            # HTML-сущности
-            import html as html_mod
-            html = html_mod.unescape(html)
-            # нормализуем пустые строки
-            html = re.sub(r"\n{3,}", "\n\n", html)
-            return html.strip()
-    
+        # убираем <script>/<style> вместе с содержимым
+        html = re.sub(r"<(script|style)[^>]*>.*?</\1>", "", html, flags=re.S | re.I)
+        # <br>, </p> → перевод строки
+        html = re.sub(r"<br\s*/?>", "\n", html, flags=re.I)
+        html = re.sub(r"</p>", "\n\n", html, flags=re.I)
+        # снимаем все остальные теги
+        html = re.sub(r"<[^>]+>", "", html)
+        html = html_mod.unescape(html)
+        # нормализуем пустые строки
+        html = re.sub(r"\n{3,}", "\n\n", html)
+        return html.strip()
+
     def get_body(self, msg: EmailMessage) -> str:
         """Возвращает текст письма: plain, либо HTML, очищенный от тегов."""
         text = None
@@ -124,6 +121,3 @@ class Mail:
         if html:
             return self.html_to_text(html)
         return ""
-
-
-   

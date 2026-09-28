@@ -36,7 +36,8 @@ class ClassificationAnswer(BaseModel):
 
 
 class AppealClassification(BaseModel):
-    result: Literal["OK"]
+    # N — текст не является обращением
+    result: Literal["OK", "N"]
     problem_type: ProblemType
     urgency: Urgency
     responsible_org: ResponsibleOrg
@@ -48,44 +49,25 @@ class AppealClassification(BaseModel):
 AppealAgent = Agent[None, AppealClassification]
 AnswerAgent = Agent[None, ClassificationAnswer]
 
+
+def _create_agent(settings: Settings, name: str, output_type, instructions: str) -> Agent:
+    model = OpenAIChatModel(
+        settings.gpt_model,
+        provider=OpenAIProvider(base_url=settings.gpt_base_url, api_key=settings.gpt_token),
+    )
+    return Agent(
+        model,
+        name=name,
+        output_type=PromptedOutput(output_type),
+        instructions=instructions,
+        model_settings=OpenAIChatModelSettings(max_tokens=2048, openai_reasoning_effort="none"),
+        retries=2,
+    )
+
+
 def create_appeal_agent(settings: Settings) -> AppealAgent:
-    model = OpenAIChatModel(
-        settings.gpt_model,
-        provider=OpenAIProvider(
-            base_url=settings.gpt_base_url,
-            api_key=settings.gpt_token
-        ),
-    )
+    return _create_agent(settings, "appeal_classifier", AppealClassification, SYSTEM_PROMPT)
 
-    return Agent(
-        model,
-        name="appeal_classifier",
-        output_type=PromptedOutput(AppealClassification),
-        instructions=SYSTEM_PROMPT,
-        model_settings=OpenAIChatModelSettings(
-            max_tokens=2048,
-            openai_reasoning_effort="none"
-        ),
-        retries=2,
-    )
 
-def check_answer(settings: Settings) -> AnswerAgent:
-    model = OpenAIChatModel(
-        settings.gpt_model,
-        provider=OpenAIProvider(
-            base_url=settings.gpt_base_url,
-            api_key=settings.gpt_token
-        ),
-    )
-
-    return Agent(
-        model,
-        name="answer_classifier",
-        output_type=PromptedOutput(ClassificationAnswer),
-        instructions=CLASSIFCATE_PROMPT,
-        model_settings=OpenAIChatModelSettings(
-            max_tokens=2048,
-            openai_reasoning_effort="none"
-        ),
-        retries=2,
-    )
+def create_answer_agent(settings: Settings) -> AnswerAgent:
+    return _create_agent(settings, "answer_classifier", ClassificationAnswer, CLASSIFCATE_PROMPT)

@@ -2,6 +2,7 @@ import asyncio
 import json
 import sys
 
+from loguru import logger
 from sqlalchemy import select
 
 from umniy_dom_max.db.database import create_engine, create_sessionmaker, init_db
@@ -18,7 +19,7 @@ async def amain(path: str):
 
     async with create_sessionmaker(engine)() as db:
         if await db.scalar(select(House).limit(1)):
-            print("Дома уже есть — сид пропущен")
+            logger.info("Дома уже есть — сид пропущен")
             await engine.dispose()
             return
 
@@ -30,8 +31,8 @@ async def amain(path: str):
 
         for a in data["appeals"]:
             messages = [AppealMessage(**m) for m in a.pop("messages")]
-            address = a.pop("address")
-            db.add(Appeal(**a, appeal_address=address, mail_subject=f"seed: {a['text']}", messages=messages))
+            house = houses[a.pop("address")]
+            db.add(Appeal(**a, house=house, appeal_address=house.address, mail_subject=f"seed: {a['text']}", messages=messages))
 
         for m in data["house_messages"]:
             db.add(HouseMessage(house=houses[m.pop("address")], **m))
@@ -39,7 +40,10 @@ async def amain(path: str):
         await db.commit()
 
     await engine.dispose()
-    print(f"Засеяно: домов {len(houses)}, пользователей {len(data['users'])}, обращений {len(data['appeals'])}")
+    logger.info(
+        "Засеяно: домов {}, пользователей {}, обращений {}",
+        len(houses), len(data["users"]), len(data["appeals"]),
+    )
 
 
 def main():

@@ -1,3 +1,4 @@
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import (
     AsyncEngine,
     AsyncSession,
@@ -20,14 +21,12 @@ def create_sessionmaker(engine: AsyncEngine) -> async_sessionmaker[AsyncSession]
 
 
 async def init_db(engine: AsyncEngine) -> None:
-    import umniy_dom_max.db.models  # noqa: F401
-    from umniy_dom_max.db.models import User
+    from umniy_dom_max.db.models import User  # models импортируют Base отсюда
 
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
 
     async with engine.begin() as conn:
-        from sqlalchemy import select
         result = await conn.execute(select(User).where(User.id == 0))
         if result.scalar_one_or_none() is None:
             await conn.execute(

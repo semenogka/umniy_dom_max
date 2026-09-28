@@ -7,16 +7,16 @@ import fastapi
 import uvicorn
 from fastapi import Request
 from fastapi.responses import JSONResponse
+from loguru import logger
 from starlette.middleware.cors import CORSMiddleware
 
 from umniy_dom_max.db.database import create_engine, create_sessionmaker, init_db
 from umniy_dom_max.handlers import router
-from umniy_dom_max.llm import create_appeal_agent, check_answer
+from umniy_dom_max.llm import create_answer_agent, create_appeal_agent
+from umniy_dom_max.mail import Mail
 from umniy_dom_max.mail_monitoring import mail_checker
 from umniy_dom_max.settings import Settings
 from umniy_dom_max.ws import ConnectionManager
-
-log = logging.getLogger(__name__)
 
 TAGS_METADATA = [
     {
@@ -48,11 +48,18 @@ def main():
         app.state.settings = settings
         app.state.sessionmaker = create_sessionmaker(engine)
         app.state.appeal_agent = create_appeal_agent(settings)
-        app.state.answer_agent = check_answer(settings)
+        app.state.answer_agent = create_answer_agent(settings)
         app.state.ws_manager = ConnectionManager()
+        app.state.mail = Mail(settings.mail_host, settings.mail_user, settings.mail_password)
 
         app.state.mail_task = asyncio.create_task(
-            mail_checker(app.state.answer_agent, app.state.sessionmaker, settings, app.state.ws_manager)
+            mail_checker(
+                app.state.answer_agent,
+                app.state.sessionmaker,
+                settings,
+                app.state.ws_manager,
+                app.state.mail,
+            )
         )
 
         yield
@@ -89,7 +96,7 @@ def main():
                 content={"detail": traceback.format_exc()},
                 media_type="application/json; charset=utf-8",
             )
-        log.exception("Internal server error", exc_info=exc)
+        logger.opt(exception=exc).error("Internal server error")
         return JSONResponse(
             status_code=500,
             content={"detail": "Internal server error"},

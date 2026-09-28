@@ -1,5 +1,6 @@
 import asyncio
 
+from loguru import logger
 from sqlalchemy import text
 
 import umniy_dom_max.db.models  # noqa: F401
@@ -14,7 +15,7 @@ async def amain():
         await conn.execute(text("CREATE SCHEMA public"))
         await conn.run_sync(Base.metadata.create_all)
     await engine.dispose()
-    print("База очищена и пересоздана")
+    logger.info("База очищена и пересоздана")
 
 
 def main():

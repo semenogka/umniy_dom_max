@@ -6,12 +6,15 @@ import requests
 from fastapi import HTTPException, WebSocket, WebSocketDisconnect
 from loguru import logger
 from datetime import datetime
-from umniy_dom_max.mail import Mail
+from sqlalchemy.ext.asyncio import AsyncSession
+
 from umniy_dom_max.db import repository
+from umniy_dom_max.db.models import Appeal
 from umniy_dom_max.settings import Settings
-from umniy_dom_max.dependencies import AppealAgentDep, DbSession, SettingsDep, WsManagerDep
+from umniy_dom_max.dependencies import AppealAgentDep, DbSession, MailDep, SettingsDep, WsManagerDep
 from umniy_dom_max import html as html_templates
 from umniy_dom_max.schemas import (
+    STATUS_LABELS,
     AddressIn,
     AppealDetailedOut,
     AppealIn,
@@ -21,20 +24,20 @@ from umniy_dom_max.schemas import (
     HouseOut,
     MessageIn,
     MessageOut,
+    Status,
     StatusIn,
     UserOut,
 )
-from umniy_dom_max.ws import appeal_room, house_room
+from umniy_dom_max.ws import ConnectionManager, appeal_room, house_room
 router = fastapi.APIRouter()
-settings = Settings()
-mail = Mail(settings.mail_host, settings.mail_user, settings.mail_password)
 
-status = {
-    "in_progress": "В работе",
-    "dop": "Дополните",
-    "checked": "Проверено",
-    "close": "Закрыто"
-}
+
+def _mail_attachments(images: list[str]) -> list[dict]:
+    return [
+        {"data": b64, "filename": f"photo_{i}.jpg", "mime": "image/jpeg"}
+        for i, b64 in enumerate(images)
+    ]
+
 
 @router.post("/users/demo", response_model=UserOut, tags=["Пользователи"],
              summary="Создать демо-пользователя",
@@ -62,6 +65,8 @@ async def create_appeal(
     db: DbSession,
     agent: AppealAgentDep,
     ws: WsManagerDep,
+    mail: MailDep,
+    settings: SettingsDep,
 ):
     try:
         classification = (await agent.run(data.text)).output
@@ -76,21 +81,20 @@ async def create_appeal(
         raise HTTPException(404, "Not found house")
     if not any(h.address == house.address for h in user.houses):
         raise HTTPException(403, "Address not linked to user")
-    print(classification)
-    if classification.problem_type == 'другая':
-        bot_text = ("Данное сообщение не явялется обращением.")
+    if classification.result == "N":
         raise HTTPException(403, "Appeal is bad")
-    else:
-        bot_text = (
-            f"Тип: {classification.problem_type}\n"
-            f"Ответственный: {classification.responsible_org}\n"
-            f"{classification.deadline_text}\n"
-            f"План: {classification.action_plan}"
-        )
+
+    bot_text = (
+        f"Тип: {classification.problem_type}\n"
+        f"Ответственный: {classification.responsible_org}\n"
+        f"{classification.deadline_text}\n"
+        f"План: {classification.action_plan}"
+    )
     mail_subject = f"🏠 Новое обращение от {user.name} с адресса {house.address} на тему {classification.problem_type} от {datetime.now()}"
+    attachments = _mail_attachments(data.attachments)
     await asyncio.to_thread(
         mail.send,
-        to="akuninsemen79@gmail.com",
+        to=settings.mail_to,
         subject=mail_subject,
         text=f"Новое обращение \n\n{data.text}\n\n{bot_text}",
         html=html_templates.new_appeal_html(
@@ -101,13 +105,13 @@ async def create_appeal(
             classification_org=classification.responsible_org,
             deadline_text=classification.deadline_text,
             action_plan=classification.action_plan,
-            attachments=[{"data": b64, "filename": f"photo_{i}.jpg", "mime": "image/jpeg"} for i, b64 in enumerate(data.attachments or [])],
+            attachments=attachments,
         ),
-        attachments=[{"data": b64, "filename": f"photo_{i}.jpg", "mime": "image/jpeg"} for i, b64 in enumerate(data.attachments or [])],
+        attachments=attachments,
     )
 
     appeal = await repository.create_appeal(
-        db, user.id, house.address, data.text, data.attachments, classification, bot_text, mail_subject, user.name
+        db, user.id, house, data.text, data.attachments, classification, bot_text, mail_subject, user.name
     )
     await ws.broadcast(
         house_room(house.id),
@@ -116,6 +120,75 @@ async def create_appeal(
             "data": AppealOut.model_validate(appeal).model_dump(mode="json"),
         },
     )
+    return appeal
+
+
+async def change_appeal_status(
+    db: AsyncSession,
+    settings: Settings,
+    ws: ConnectionManager,
+    appeal: Appeal,
+    status: Status,
+    mail_text: str,
+) -> Appeal:
+    """Меняет статус, пишет системное сообщение, уведомляет бота и WebSocket."""
+    changed = appeal.status != status
+    old_label = STATUS_LABELS.get(appeal.status, appeal.status)
+    msg = f"Статус по {appeal.id} изменён: {old_label} → {STATUS_LABELS[status]}."
+    if status != "close":
+        msg += f" Посмотрите ответ по вашему обращению: {mail_text}"
+
+    system_msg = await repository.set_appeal_status(
+        db,
+        appeal,
+        status,
+        msg if changed else None,
+    )
+    if not changed:
+        return appeal
+
+    # уведа в чат
+    try:
+        user = await repository.get_user(db, appeal.author_id)
+        chat_id = user.max_chat_id
+        await asyncio.to_thread(
+            requests.post,
+            f"{settings.max_api_url}/messages",
+            params={"chat_id": chat_id},
+            headers={"Authorization": settings.max_token},
+            json={
+                "text": f"Статус обращения №{appeal.id} изменён на {STATUS_LABELS[status]}. {mail_text}"
+            },
+            timeout=5,
+            verify=False,
+        )
+    except Exception:  # noqa: BLE001 — уведомление не должно ронять запрос
+        logger.exception("не получилось уведомить в бота")
+
+    appeal_payload = {
+        "type": "appeal_updated",
+        "data": AppealOut.model_validate(appeal).model_dump(mode="json"),
+    }
+    await ws.broadcast(appeal_room(appeal.id), appeal_payload)
+    await ws.broadcast(house_room(appeal.house_id), appeal_payload)
+
+    if system_msg is not None:
+        await ws.broadcast(
+            appeal_room(appeal.id),
+            {
+                "type": "message",
+                "data": MessageOut(
+                    id=system_msg.id,
+                    sender_id=system_msg.sender_id,
+                    sender=system_msg.sender or "bot",
+                    text=system_msg.text,
+                    created_at=system_msg.created_at,
+                    is_read=bool(system_msg.is_read),
+                    attachments=[],
+                ).model_dump(mode="json"),
+            },
+        )
+
     return appeal
 
 
@@ -132,71 +205,7 @@ async def update_appeal_status(
     appeal = await repository.get_appeal(db, appeal_id)
     if not appeal:
         raise HTTPException(404, "Not found")
-    old_status = appeal.status
-    changed = old_status != data.status
-    msg = f"Статус по {appeal_id} изменён: {status[old_status]} → {status[data.status]}."
-    if data.status != "close":
-        msg += f"Посмотрите ответ по вашему обращению: {data.mail_text}"
-
-    if data.status == "dop":
-        bot_text = "Статус изменен. Запрашивают дополнительные данные для обращения."
-    if data.status == "checked":
-        bot_text = "Статус изменен. Ваш запрос проверен."
-
-    system_msg = await repository.set_appeal_status(
-        db,
-        appeal,
-        data.status,
-        msg if changed else None,
-    )
-    # уведа в чат
-    if changed:
-        try:
-            user = await repository.get_user(db, appeal.author_id)
-            chat_id = user.max_chat_id
-            await asyncio.to_thread(
-                requests.post,
-                f"{settings.max_api_url}/messages",
-                params={"chat_id": chat_id},
-                headers={"Authorization": settings.max_token},
-                json={
-                    "text": f"Статус обращения №{appeal.id} изменён на {status[data.status]}. {data.mail_text}"
-                },
-                timeout=5,
-                verify=False,
-            )
-        except Exception:  # noqa: BLE001 — уведомление не должно ронять запрос
-            logger.exception("не получилось уведомить в бота")
-
-        appeal_payload = {
-            "type": "appeal_updated",
-            "data": AppealOut.model_validate(appeal).model_dump(mode="json"),
-        }
-        await ws.broadcast(appeal_room(appeal.id), appeal_payload)
-
-        if appeal.appeal_address:
-            house = await repository.get_house_by_address(db, appeal.appeal_address)
-            if house:
-                await ws.broadcast(house_room(house.id), appeal_payload)
-
-        if system_msg is not None:
-            await ws.broadcast(
-                appeal_room(appeal.id),
-                {
-                    "type": "message",
-                    "data": MessageOut(
-                        id=system_msg.id,
-                        sender_id=system_msg.sender_id,
-                        sender=system_msg.sender or "bot",
-                        text=system_msg.text,
-                        created_at=system_msg.created_at,
-                        is_read=bool(system_msg.is_read),
-                        attachments=[],
-                    ).model_dump(mode="json"),
-                },
-            )
-
-    return appeal
+    return await change_appeal_status(db, settings, ws, appeal, data.status, data.mail_text)
 
 
 @router.get("/appeals/{appeal_id}/messages", response_model=AppealDetailedOut, tags=["Обращения"],
@@ -219,6 +228,26 @@ async def list_appeals_by_house_id(house_id: int, db: DbSession):
     return await repository.list_appeals_by_house_id(db, house_id)
 
 
+async def _post_appeal_message(
+    db: AsyncSession,
+    ws: ConnectionManager,
+    appeal_id: int,
+    data: MessageIn,
+    sender: str,
+    bot_text: str,
+):
+    """Сохраняет сообщение жителя и ответ бота, рассылает оба в комнату обращения."""
+    messages = await repository.add_appeal_message(
+        db, appeal_id, data.user_id, sender, data.text, data.attachments, bot_text=bot_text
+    )
+    for message in messages:
+        await ws.broadcast(
+            appeal_room(appeal_id),
+            {"type": "message", "data": MessageOut.model_validate(message).model_dump(mode="json")},
+        )
+    return messages[0]
+
+
 @router.post("/appeals/{appeal_id}/message", response_model=MessageOut, tags=["Обращения"],
              summary="Отправить сообщение в обращение",
              description="Отправляет дополнительное сообщение в существующее обращение."
@@ -229,6 +258,8 @@ async def send_message_appeal(
     db: DbSession,
     agent: AppealAgentDep,
     ws: WsManagerDep,
+    mail: MailDep,
+    settings: SettingsDep,
 ):
     appeal = await repository.get_appeal_detailed(db, appeal_id)
 
@@ -242,44 +273,16 @@ async def send_message_appeal(
     sender = user.name
 
     if appeal.status == "close":
-        message = await repository.add_appeal_message(
-            db,
-            appeal.id,
-            data.user_id,
-            sender,
-            data.text,
-            data.attachments,
-            bot_text="Данное обращение уже закрыто.",
-        )
-        await ws.broadcast(
-            appeal_room(appeal.id),
-            {"type": "message", "data": MessageOut.model_validate(message).model_dump(mode="json")},
-        )
-        return message
+        return await _post_appeal_message(db, ws, appeal.id, data, sender, "Данное обращение уже закрыто.")
 
     classification = (await agent.run(data.text)).output
 
-    if classification.problem_type == "другая":
-        message = await repository.add_appeal_message(
-            db,
-            appeal.id,
-            data.user_id,
-            sender,
-            data.text,
-            data.attachments,
-            bot_text="Это не является дополнением к обращению.",
-        )
-        await ws.broadcast(
-            appeal_room(appeal.id),
-            {"type": "message", "data": MessageOut.model_validate(message).model_dump(mode="json")},
-        )
-        return message
-
-    print(classification.problem_type)
+    if classification.result == "N":
+        return await _post_appeal_message(db, ws, appeal.id, data, sender, "Это не является дополнением к обращению.")
 
     await asyncio.to_thread(
         mail.send,
-        to="akuninsemen79@gmail.com",
+        to=settings.mail_to,
         subject=appeal.mail_subject,
         text=data.text,
         html=html_templates.addition_html(
@@ -287,30 +290,13 @@ async def send_message_appeal(
             sender=sender,
             text=data.text,
         ),
-        attachments=[
-            {
-                "data": b64,
-                "filename": f"photo_{i}.jpg",
-                "mime": "image/jpeg",
-            }
-            for i, b64 in enumerate(data.attachments)
-        ],
+        attachments=_mail_attachments(data.attachments),
     )
 
-    message = await repository.add_appeal_message(
-        db,
-        appeal.id,
-        data.user_id,
-        sender,
-        data.text,
-        data.attachments,
-        bot_text="Мы приняли дополнительные данные и передали их уполномоченной компании.",
+    return await _post_appeal_message(
+        db, ws, appeal.id, data, sender,
+        "Мы приняли дополнительные данные и передали их уполномоченной компании.",
     )
-    await ws.broadcast(
-        appeal_room(appeal.id),
-        {"type": "message", "data": MessageOut.model_validate(message).model_dump(mode="json")},
-    )
-    return message
 
 @router.get("/users/{user_id}/houses", response_model=list[HouseOut], tags=["Пользователи"],
              summary="Список домов пользователя",
