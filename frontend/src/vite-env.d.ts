@@ -67,6 +67,8 @@ interface MaxWebApp {
 	platform: string;
 	/** Версия приложения MAX */
 	version: string;
+	/** Сообщить MAX, что приложение готово: без этого iOS-клиент не убирает свой загрузчик */
+	ready: () => void;
 }
 
 interface Window {

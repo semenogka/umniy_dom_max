@@ -20,3 +20,5 @@ createRoot(document.getElementById("root")!).render(
 		</Provider>
 	</StrictMode>,
 );
+
+window.WebApp?.ready();
