@@ -4,6 +4,8 @@ WORKDIR /app
 COPY package.json bun.lock ./
 RUN bun install --frozen-lockfile
 COPY . .
+# На проде API за тем же доменом под /api (nginx на хосте)
+ARG VITE_API_URL=/api
 RUN bun run build
 
 # Раздача статики

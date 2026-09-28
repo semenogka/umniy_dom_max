@@ -24,6 +24,9 @@ ENV PATH="/app/.venv/bin:${PATH}" \
     PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1
 
+# На проде API за nginx под /api
+ENV ROOT_PATH=/api
+
 WORKDIR /app
 
 COPY --from=builder /app /app

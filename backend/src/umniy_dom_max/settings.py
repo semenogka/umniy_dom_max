@@ -9,6 +9,8 @@ class Settings(BaseSettings):
     log_level: str = "INFO"
     host: str = "0.0.0.0"
     port: int = 8000
+    # Префикс, под которым API смонтирован за reverse proxy (на проде nginx срезает /api)
+    root_path: str = ""
 
     database_url: str = "postgresql://postgres:postgres@localhost:5432/postgres"
 

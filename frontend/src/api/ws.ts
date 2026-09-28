@@ -50,12 +50,11 @@ const CHAT_SOCKET_EVENT_TYPES = new Set(["message", "read", "appeal_created", "a
  * @param apiBase - VITE_API_URL
  */
 export function getWsBaseUrl(apiBase = API_BASE_URL): string {
-	if (!apiBase) {
-		const { protocol, host } = window.location;
-		return `${protocol === "https:" ? "wss:" : "ws:"}//${host}`;
-	}
+	// Относительный base (`/api`) достраивается от текущего origin
+	const url = new URL(apiBase || "/", window.location.href);
+	url.protocol = url.protocol === "https:" ? "wss:" : "ws:";
 
-	return apiBase.replace(/^http/, "ws");
+	return url.href.replace(/\/$/, "");
 }
 
 /**

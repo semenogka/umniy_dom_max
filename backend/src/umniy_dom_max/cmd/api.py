@@ -64,6 +64,7 @@ def main():
         "их классификация и переписка с управляющей компанией.",
         openapi_tags=TAGS_METADATA,
         lifespan=lifespan,
+        root_path=settings.root_path,
         docs_url="/docs" if settings.debug else None,
         redoc_url="/redoc" if settings.debug else None,
         openapi_url="/openapi.json" if settings.debug else None,

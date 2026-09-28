@@ -6,5 +6,8 @@ services:
     command: ["api"]
     env_file:
       - backend/.env
+    # Локально без прокси, префикс не нужен
+    environment:
+      ROOT_PATH: ""
     ports:
       - "8000:8000"
