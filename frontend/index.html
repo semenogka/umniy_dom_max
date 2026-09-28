@@ -31,8 +31,36 @@
 					diag("console", Array.prototype.map.call(arguments, function (a) { return a && a.stack || String(a); }).join(" "));
 					return consoleError.apply(console, arguments);
 				};
+				var t0 = Date.now();
+				function since() { return (Date.now() - t0) + "ms "; }
+
+				// React планирует работу через MessageChannel: проверяем, доставляется ли он
+				var channel = new MessageChannel();
+				channel.port1.onmessage = function () { diag("mc", since() + "MessageChannel сработал"); };
+				channel.port2.postMessage(null);
+				setTimeout(function () { diag("timeout", since() + "setTimeout 0 сработал"); }, 0);
+
+				var origFetch = window.fetch;
+				window.fetch = function (input) {
+					var url = String(input && input.url || input);
+					if (url.indexOf("__diag") < 0) diag("fetch", since() + "start " + url);
+					return origFetch.apply(this, arguments).then(function (r) {
+						diag("fetch", since() + "end " + r.status + " " + url);
+						return r;
+					});
+				};
+				var OrigWS = window.WebSocket;
+				window.WebSocket = function (url, p) {
+					diag("ws", since() + "new " + url);
+					return p === undefined ? new OrigWS(url) : new OrigWS(url, p);
+				};
+				window.WebSocket.prototype = OrigWS.prototype;
+				["CONNECTING", "OPEN", "CLOSING", "CLOSED"].forEach(function (k) { window.WebSocket[k] = OrigWS[k]; });
+
 				setTimeout(function () {
-					diag("state", location.href + " | " + document.body.innerText.replace(/\s+/g, " ").slice(0, 200));
+					var s = window.__store && window.__store.getState();
+					var st = s ? JSON.stringify({ ui: s.ui, houses: s.houses.status, appeals: s.appeals.status, houseChat: s.houseChat.status, sel: s.houses.selectedHouse && s.houses.selectedHouse.id }) : "no store";
+					diag("state", since() + location.href + " | " + st + " | " + document.body.innerText.replace(/\s+/g, " ").slice(0, 120));
 				}, 5000);
 			})();
 		</script>
