@@ -1,5 +1,5 @@
 import asyncio
-iimport random
+import random
 import re
 
 from loguru import logger
@@ -56,7 +56,7 @@ async def reply_as_uk(uk_agent, mail, msg):
 
     subject = str(msg["Subject"] or "")
     headers = {"In-Reply-To": msg["Message-ID"], "References": msg["Message-ID"]} if msg["Message-ID"] else {}
-    await asyncio.to_thread(mail.send, to=mail.user, subject=f"Re: {subject}", text=reply, headers=headers)
+    await asyncio.to_thread(mail.send, to=mail.user, subject=f"{subject}", text=reply, headers=headers)
     logger.info("Демо-УК ответила на «{}»", subject)
 
 
