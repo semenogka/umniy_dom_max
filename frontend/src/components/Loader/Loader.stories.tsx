@@ -9,7 +9,7 @@ import { Loader } from "./index";
 function createLoaderStore(isLoading: boolean) {
 	return configureStore({
 		reducer: { ui: uiReducer },
-		preloadedState: { ui: { isLoading } },
+		preloadedState: { ui: { isLoading, loadingCount: isLoading ? 1 : 0 } },
 	});
 }
 
