@@ -305,15 +305,15 @@ async def send_message_appeal(
 
     # дополнение проверяем в контексте обращения и последнего сообщения (обычно вопрос УК);
     # одни фото без текста принимаем без проверки
-    if data.text.strip():
-        last = re.sub(r"</?b>", "", appeal.messages[-1].text) if appeal.messages else ""
-        prompt = f"Обращение:\n{appeal.text}\n\nПоследнее сообщение в чате:\n{last}\n\nНовое сообщение жителя:\n{data.text}"
-        check = (await agent.run(prompt)).output
-    else:
-        check = None
+    # if data.text.strip():
+    #     last = re.sub(r"</?b>", "", appeal.messages[-1].text) if appeal.messages else ""
+    #     prompt = f"Обращение:\n{appeal.text}\n\nПоследнее сообщение в чате:\n{last}\n\nНовое сообщение жителя:\n{data.text}"
+    #     check = (await agent.run(prompt)).output
+    # else:
+    #     check = None
 
-    if check and check.result == "N":
-        return await _post_appeal_message(db, ws, appeal.id, data, sender, "Это не является дополнением к обращению.")
+    # if check and check.result == "N":
+    #     return await _post_appeal_message(db, ws, appeal.id, data, sender, "Это не является дополнением к обращению.")
 
     await asyncio.to_thread(
         mail.send,
