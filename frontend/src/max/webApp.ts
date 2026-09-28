@@ -18,6 +18,24 @@ export function getMaxUserId(): number | null {
 }
 
 /**
+ * Id чата MAX из `window.WebApp.initDataUnsafe.chat.id`
+ */
+export function getMaxChatId(): number | null {
+	const chat = window.WebApp?.initDataUnsafe?.chat;
+
+	if (chat && typeof chat.id === "number" && Number.isFinite(chat.id)) {
+		return chat.id;
+	}
+
+	if (import.meta.env.DEV) return 1;
+
+	const demoChatId = Number(import.meta.env.VITE_DEMO_CHAT_ID);
+	if (demoChatId) return demoChatId;
+
+	return null;
+}
+
+/**
  * Имя пользователя MAX
  *
  * @returns {string | null} Имя пользователя MAX

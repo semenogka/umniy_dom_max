@@ -11,7 +11,7 @@ import { fetchAppealMessages, sendAppealMessage } from "@/store/appealChat/appea
 import { fetchHouseMessages, sendHouseMessage } from "@/store/houseChat/houseChat.slice";
 import { fetchUserHouses, selectHouse } from "@/store/houses/houses.slice";
 import type { House } from "@/store/houses/houses.types";
-import { initCurrentUser } from "@/store/user/user.slice";
+import { ensureDemoUser, initCurrentUser } from "@/store/user/user.slice";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 
 import styles from "./Chat.module.scss";
@@ -143,7 +143,19 @@ export function ChatPage() {
 
 	useEffect(() => {
 		dispatch(initCurrentUser());
-		dispatch(fetchUserHouses());
+
+		/**
+		 * Сначала /users/demo, потом дома
+		 * @returns {Promise<void>}
+		 */
+		const bootstrap = async (): Promise<void> => {
+			const demo = await dispatch(ensureDemoUser());
+			if (ensureDemoUser.fulfilled.match(demo)) {
+				dispatch(fetchUserHouses());
+			}
+		};
+
+		void bootstrap();
 	}, [dispatch]);
 
 	useEffect(() => {
