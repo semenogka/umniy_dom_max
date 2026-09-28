@@ -6,7 +6,7 @@ import { MessageInput } from "@/components/MessageInput";
 import { Sidebar } from "@/components/Sidebar";
 import { useAppealSocket } from "@/hooks/useAppealSocket";
 import { useHouseSocket } from "@/hooks/useHouseSocket";
-import { fetchHouseAppeals, createAppeal } from "@/store/appeals/appeals.slice";
+import { fetchHouseAppeals, createAppeal, closeAppeal } from "@/store/appeals/appeals.slice";
 import { fetchAppealMessages, sendAppealMessage } from "@/store/appealChat/appealChat.slice";
 import { fetchHouseMessages, sendHouseMessage } from "@/store/houseChat/houseChat.slice";
 import { fetchUserHouses, selectHouse } from "@/store/houses/houses.slice";
@@ -83,6 +83,7 @@ export function ChatPage() {
 	const [houseInfoOpen, setHouseInfoOpen] = useState(false);
 	const [appealDetailsOpen, setAppealDetailsOpen] = useState(false);
 	const [actRequestedByChat, setActRequestedByChat] = useState<Record<string, boolean>>({});
+	const [closingAppeal, setClosingAppeal] = useState(false);
 	/** WS дома после appeals (messages не блокируют) */
 	const [houseSocketReady, setHouseSocketReady] = useState(false);
 	/** WS заявки после попытки загрузить messages */
@@ -454,6 +455,21 @@ export function ChatPage() {
 		setActRequestedByChat((prev) => ({ ...prev, [chat.id]: true }));
 	}, [chat.id]);
 
+	/**
+	 * Закрытие заявки (статус close)
+	 * @returns {void}
+	 */
+	const handleCloseAppeal = useCallback(() => {
+		const id = Number(chat.id);
+		if (!Number.isFinite(id) || closingAppeal) return;
+
+		setClosingAppeal(true);
+
+		void dispatch(closeAppeal(id)).finally(() => {
+			setClosingAppeal(false);
+		});
+	}, [chat.id, closingAppeal, dispatch]);
+
 	return (
 		<div className={getChatPageClassName(styles)}>
 			<ChatHeader
@@ -465,7 +481,7 @@ export function ChatPage() {
 
 			<MessageList key={chat.id} chat={chat} onIncomingVisible={handleIncomingVisible} />
 
-			<ChatMessageInput chatId={chat.id} onSubmit={handleSubmit} />
+			{chat.status !== "close" && <ChatMessageInput chatId={chat.id} onSubmit={handleSubmit} />}
 
 			<Sidebar direction="left" open={sidebarOpen} onClose={handleCloseSidebar}>
 				{sidebarHouse && (
@@ -523,6 +539,8 @@ export function ChatPage() {
 						chat={chat}
 						actRequested={actRequested}
 						onRequestAct={handleRequestAct}
+						closing={closingAppeal}
+						onCloseAppeal={handleCloseAppeal}
 						onClose={handleCloseAppealDetails}
 					/>
 				)}
