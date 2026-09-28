@@ -1,7 +1,10 @@
-import { CSSTransition, TransitionGroup } from "@/components/Transitions";
-import { useAppSelector } from "@/store/hooks";
+import { useEffect } from "react";
 
-import { LOADER_DURATION } from "./Loader.config";
+import { CSSTransition, TransitionGroup } from "@/components/Transitions";
+import { useAppDispatch, useAppSelector } from "@/store/hooks";
+import { resetLoader } from "@/store/ui/ui.slice";
+
+import { LOADER_DURATION, LOADER_WATCHDOG_MS } from "./Loader.config";
 import styles from "./Loader.module.scss";
 import { getLoaderClassName } from "./Loader.service";
 import type { LoaderProps } from "./Loader.types";
@@ -23,7 +26,20 @@ function LogoMark() {
 /** Глобальный Loader */
 export function Loader(props: LoaderProps) {
 	const { label = "Загрузка Домового", className } = props;
+	const dispatch = useAppDispatch();
 	const isLoading = useAppSelector((state) => state.ui.isLoading);
+
+	useEffect(() => {
+		if (!isLoading) return;
+
+		const timer = window.setTimeout(() => {
+			dispatch(resetLoader());
+		}, LOADER_WATCHDOG_MS);
+
+		return () => {
+			window.clearTimeout(timer);
+		};
+	}, [dispatch, isLoading]);
 
 	return (
 		<TransitionGroup>
