@@ -22,6 +22,3 @@ createRoot(document.getElementById("root")!).render(
 );
 
 window.WebApp?.ready();
-
-// Временная диагностика iOS (index.html читает состояние через 5 с)
-(window as unknown as { __store: typeof store }).__store = store;

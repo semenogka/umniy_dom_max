@@ -29,28 +29,44 @@ const GET_ATTEMPTS = 3;
 /**
  * GET-запрос к API
  *
- * WebView MAX на iOS иногда не отправляет один из параллельных запросов,
- * и его fetch не завершается никогда: обрываем по таймауту и повторяем.
+ * WebView MAX на iOS иногда не отправляет запрос, и его fetch не завершается
+ * никогда, причём на abort() тоже не реагирует. Поэтому таймаут — через
+ * собственный таймер в Promise.race, а не только через AbortController.
  * @param path - путь до ресурса API
  */
 export async function apiGet<T>(path: string): Promise<T> {
 	for (let attempt = 1; ; attempt++) {
 		const controller = new AbortController();
-		const timer = setTimeout(() => controller.abort(), GET_TIMEOUT_MS);
+		let timer: ReturnType<typeof setTimeout> | undefined;
+		const timeout = new Promise<never>((_, reject) => {
+			timer = setTimeout(() => {
+				controller.abort();
+				reject(new RequestTimeoutError());
+			}, GET_TIMEOUT_MS);
+		});
 
 		try {
-			const response = await fetch(`${API_BASE_URL}${path}`, { signal: controller.signal });
-
-			if (!response.ok) throw new Error(await readErrorDetail(response));
-
-			return (await response.json()) as T;
+			return await Promise.race([getJson<T>(path, controller.signal), timeout]);
 		} catch (error) {
-			const timedOut = error instanceof DOMException && error.name === "AbortError";
-			if (!timedOut || attempt >= GET_ATTEMPTS) throw error;
+			if (!(error instanceof RequestTimeoutError) || attempt >= GET_ATTEMPTS) throw error;
 		} finally {
 			clearTimeout(timer);
 		}
 	}
+}
+
+class RequestTimeoutError extends Error {
+	constructor() {
+		super("Сервер не ответил, попробуйте ещё раз");
+	}
+}
+
+async function getJson<T>(path: string, signal: AbortSignal): Promise<T> {
+	const response = await fetch(`${API_BASE_URL}${path}`, { signal });
+
+	if (!response.ok) throw new Error(await readErrorDetail(response));
+
+	return (await response.json()) as T;
 }
 
 /**
