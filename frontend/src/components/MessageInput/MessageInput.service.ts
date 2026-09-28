@@ -1,3 +1,9 @@
+import {
+	MESSAGE_INPUT_COMPRESSIBLE_IMAGES,
+	MESSAGE_INPUT_IMAGE_MAX_SIDE,
+	MESSAGE_INPUT_IMAGE_QUALITY,
+	MESSAGE_INPUT_MAX_FILE_BYTES,
+} from "./MessageInput.config";
 import type { MessageAttachmentDraft } from "./MessageInput.types";
 
 /**
@@ -75,6 +81,100 @@ export function readFileAsDataUrl(file: File): Promise<string> {
 		reader.onerror = () => reject(reader.error ?? new Error("Не удалось прочитать файл"));
 		reader.readAsDataURL(file);
 	});
+}
+
+/**
+ * Картинка → HTMLImageElement (fallback, если нет createImageBitmap)
+ * @param file - файл
+ */
+function loadImageElement(file: File): Promise<HTMLImageElement> {
+	return new Promise((resolve, reject) => {
+		const url = URL.createObjectURL(file);
+		const img = new Image();
+
+		img.onload = () => {
+			URL.revokeObjectURL(url);
+			resolve(img);
+		};
+		img.onerror = () => {
+			URL.revokeObjectURL(url);
+			reject(new Error("Не удалось открыть картинку"));
+		};
+		img.src = url;
+	});
+}
+
+/**
+ * Сжимает картинку: длинная сторона до MESSAGE_INPUT_IMAGE_MAX_SIDE, JPEG.
+ * Если не вышло или стало больше — возвращает исходный файл.
+ * @param file - файл
+ */
+export async function compressImageFile(file: File): Promise<File> {
+	if (!MESSAGE_INPUT_COMPRESSIBLE_IMAGES.includes(file.type)) return file;
+
+	try {
+		const source: ImageBitmap | HTMLImageElement =
+			typeof createImageBitmap === "function"
+				? await createImageBitmap(file, { imageOrientation: "from-image" })
+				: await loadImageElement(file);
+
+		const scale = Math.min(1, MESSAGE_INPUT_IMAGE_MAX_SIDE / Math.max(source.width, source.height));
+		const width = Math.max(1, Math.round(source.width * scale));
+		const height = Math.max(1, Math.round(source.height * scale));
+
+		const canvas = document.createElement("canvas");
+		canvas.width = width;
+		canvas.height = height;
+
+		const ctx = canvas.getContext("2d");
+		if (!ctx) return file;
+
+		// JPEG без прозрачности — подкладываем белый фон
+		ctx.fillStyle = "#fff";
+		ctx.fillRect(0, 0, width, height);
+		ctx.drawImage(source, 0, 0, width, height);
+		if ("close" in source) source.close();
+
+		const blob = await new Promise<Blob | null>((resolve) =>
+			canvas.toBlob(resolve, "image/jpeg", MESSAGE_INPUT_IMAGE_QUALITY),
+		);
+		if (!blob || blob.size >= file.size) return file;
+
+		const baseName = file.name.replace(/\.[^.]+$/, "") || "photo";
+		return new File([blob], `${baseName}.jpg`, { type: "image/jpeg", lastModified: file.lastModified });
+	} catch {
+		return file;
+	}
+}
+
+/**
+ * Сжимает выбранные файлы и отсеивает те, что больше лимита
+ * @param files - выбранные файлы
+ * @returns сжатые файлы и имена отклонённых
+ */
+export async function prepareAttachmentFiles(
+	files: File[],
+): Promise<{ accepted: File[]; rejected: string[] }> {
+	const compressed = await Promise.all(files.map(compressImageFile));
+	const accepted: File[] = [];
+	const rejected: string[] = [];
+
+	compressed.forEach((file, index) => {
+		if (file.size > MESSAGE_INPUT_MAX_FILE_BYTES) rejected.push(files[index].name);
+		else accepted.push(file);
+	});
+
+	return { accepted, rejected };
+}
+
+/**
+ * Текст ошибки для файлов больше лимита
+ * @param names - имена отклонённых файлов
+ */
+export function getRejectedFilesMessage(names: string[]): string {
+	const limitMb = Math.round(MESSAGE_INPUT_MAX_FILE_BYTES / 1024 / 1024);
+	if (names.length === 1) return `Файл «${getAttachmentShortName(names[0])}» больше ${limitMb} МБ`;
+	return `Не прикреплены файлы больше ${limitMb} МБ: ${names.length}`;
 }
 
 /**
