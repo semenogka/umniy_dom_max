@@ -1,8 +1,8 @@
 import {
-	MESSAGE_INPUT_COMPRESSIBLE_IMAGES,
 	MESSAGE_INPUT_IMAGE_MAX_SIDE,
 	MESSAGE_INPUT_IMAGE_QUALITY,
 	MESSAGE_INPUT_MAX_FILE_BYTES,
+	MESSAGE_INPUT_PHOTO_TYPES,
 } from "./MessageInput.config";
 import type { MessageAttachmentDraft } from "./MessageInput.types";
 
@@ -105,13 +105,20 @@ function loadImageElement(file: File): Promise<HTMLImageElement> {
 }
 
 /**
- * Сжимает картинку: длинная сторона до MESSAGE_INPUT_IMAGE_MAX_SIDE, JPEG.
+ * Фото ли это (по MIME, а если браузер его не знает — по расширению, как у HEIC)
+ * @param file - файл
+ */
+export function isPhotoFile(file: File): boolean {
+	if (file.type) return MESSAGE_INPUT_PHOTO_TYPES.includes(file.type);
+	return /\.(heic|heif)$/i.test(file.name);
+}
+
+/**
+ * Сжимает фото: длинная сторона до MESSAGE_INPUT_IMAGE_MAX_SIDE, JPEG.
  * Если не вышло или стало больше — возвращает исходный файл.
  * @param file - файл
  */
 export async function compressImageFile(file: File): Promise<File> {
-	if (!MESSAGE_INPUT_COMPRESSIBLE_IMAGES.includes(file.type)) return file;
-
 	try {
 		const source: ImageBitmap | HTMLImageElement =
 			typeof createImageBitmap === "function"
@@ -148,33 +155,42 @@ export async function compressImageFile(file: File): Promise<File> {
 }
 
 /**
- * Сжимает выбранные файлы и отсеивает те, что больше лимита
+ * Отсеивает не-фото, сжимает фото и отсеивает те, что больше лимита
  * @param files - выбранные файлы
- * @returns сжатые файлы и имена отклонённых
+ * @returns сжатые фото и отклонённые файлы
  */
 export async function prepareAttachmentFiles(
 	files: File[],
-): Promise<{ accepted: File[]; rejected: string[] }> {
-	const compressed = await Promise.all(files.map(compressImageFile));
+): Promise<{ accepted: File[]; notPhoto: string[]; tooBig: string[] }> {
+	const photos = files.filter(isPhotoFile);
+	const notPhoto = files.filter((file) => !isPhotoFile(file)).map((file) => file.name);
+
+	const compressed = await Promise.all(photos.map(compressImageFile));
 	const accepted: File[] = [];
-	const rejected: string[] = [];
+	const tooBig: string[] = [];
 
 	compressed.forEach((file, index) => {
-		if (file.size > MESSAGE_INPUT_MAX_FILE_BYTES) rejected.push(files[index].name);
+		if (file.size > MESSAGE_INPUT_MAX_FILE_BYTES) tooBig.push(photos[index].name);
 		else accepted.push(file);
 	});
 
-	return { accepted, rejected };
+	return { accepted, notPhoto, tooBig };
 }
 
 /**
- * Текст ошибки для файлов больше лимита
- * @param names - имена отклонённых файлов
+ * Текст ошибки для отклонённых файлов
+ * @param notPhoto - не фото
+ * @param tooBig - фото больше лимита
  */
-export function getRejectedFilesMessage(names: string[]): string {
+export function getRejectedFilesMessage(notPhoto: string[], tooBig: string[]): string | null {
 	const limitMb = Math.round(MESSAGE_INPUT_MAX_FILE_BYTES / 1024 / 1024);
-	if (names.length === 1) return `Файл «${getAttachmentShortName(names[0])}» больше ${limitMb} МБ`;
-	return `Не прикреплены файлы больше ${limitMb} МБ: ${names.length}`;
+	const parts: string[] = [];
+
+	if (notPhoto.length) parts.push("Можно прикреплять только фото");
+	if (tooBig.length === 1) parts.push(`Фото «${getAttachmentShortName(tooBig[0])}» больше ${limitMb} МБ`);
+	else if (tooBig.length) parts.push(`Не прикреплены фото больше ${limitMb} МБ: ${tooBig.length}`);
+
+	return parts.length ? parts.join(". ") : null;
 }
 
 /**

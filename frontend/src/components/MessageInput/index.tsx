@@ -88,7 +88,7 @@ export function MessageInput(props: MessageInputProps) {
 	};
 
 	/**
-	 * Выбор файлов: сначала сжимаем, потом отсеиваем больше лимита
+	 * Выбор файлов: только фото, сначала сжимаем, потом отсеиваем больше лимита
 	 * @param event - change file input
 	 * @returns {void}
 	 */
@@ -104,14 +104,14 @@ export function MessageInput(props: MessageInputProps) {
 		setPreparing(true);
 
 		prepareAttachmentFiles(files)
-			.then(({ accepted, rejected }) => {
+			.then(({ accepted, notPhoto, tooBig }) => {
 				const drafts = createAttachmentDrafts(
 					accepted,
 					attachmentsRef.current.length,
 					MESSAGE_INPUT_MAX_ATTACHMENTS,
 				);
 				if (drafts.length) setAttachments((prev) => [...prev, ...drafts]);
-				if (rejected.length) setAttachError(getRejectedFilesMessage(rejected));
+				setAttachError(getRejectedFilesMessage(notPhoto, tooBig));
 			})
 			.finally(() => {
 				setPreparing(false);

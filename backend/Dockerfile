@@ -27,9 +27,9 @@ ENV PATH="/app/.venv/bin:${PATH}" \
 # На проде API за nginx под /api
 ENV ROOT_PATH=/api
 
-# libmagic — формат вложений по содержимому, ghostscript — сжатие PDF
+# libmagic — формат вложений по содержимому
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends libmagic1 ghostscript \
+    && apt-get install -y --no-install-recommends libmagic1 \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
