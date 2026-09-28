@@ -82,7 +82,6 @@ export function ChatPage() {
 	const [housePickerOpen, setHousePickerOpen] = useState(false);
 	const [houseInfoOpen, setHouseInfoOpen] = useState(false);
 	const [appealDetailsOpen, setAppealDetailsOpen] = useState(false);
-	const [actRequestedByChat, setActRequestedByChat] = useState<Record<string, boolean>>({});
 	const [closingAppeal, setClosingAppeal] = useState(false);
 	/** WS дома после appeals (messages не блокируют) */
 	const [houseSocketReady, setHouseSocketReady] = useState(false);
@@ -129,7 +128,6 @@ export function ChatPage() {
 	const sidebarHouse = selectedHouse ? getChatSidebarHouse(selectedHouse, houses.length) : null;
 	const sidebarAppeals = appeals.map(toChatSidebarAppealItem);
 	const newAppealHomeContext = selectedHouse?.address;
-	const actRequested = Boolean(chat.actRequested || actRequestedByChat[chat.id]);
 
 	useEffect(() => {
 		dispatch(initCurrentUser());
@@ -448,14 +446,6 @@ export function ChatPage() {
 	}, []);
 
 	/**
-	 * Запрос акта по обращению
-	 * @returns {void}
-	 */
-	const handleRequestAct = useCallback(() => {
-		setActRequestedByChat((prev) => ({ ...prev, [chat.id]: true }));
-	}, [chat.id]);
-
-	/**
 	 * Закрытие заявки (статус close)
 	 * @returns {void}
 	 */
@@ -537,8 +527,6 @@ export function ChatPage() {
 					<AppealDetailsSidebar
 						key={`appeal-details:${chat.id}`}
 						chat={chat}
-						actRequested={actRequested}
-						onRequestAct={handleRequestAct}
 						closing={closingAppeal}
 						onCloseAppeal={handleCloseAppeal}
 						onClose={handleCloseAppealDetails}

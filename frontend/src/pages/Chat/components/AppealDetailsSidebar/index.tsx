@@ -5,8 +5,6 @@ import { Icon } from "@/components/Icon";
 import { Status } from "@/components/Status";
 import { STATUS_ICON_SIZE, STATUS_META } from "@/components/Status/Status.config";
 import {
-	APPEAL_DETAILS_ACT_LABEL,
-	APPEAL_DETAILS_ACT_REQUESTED_LABEL,
 	APPEAL_DETAILS_CLOSE_LABEL,
 	APPEAL_DETAILS_CLOSING_LABEL,
 	APPEAL_DETAILS_OPERATOR_LABEL,
@@ -21,19 +19,10 @@ import type { AppealDetailsSidebarProps } from "./AppealDetailsSidebar.types";
 
 /** Лист сведений о заявке */
 export function AppealDetailsSidebar(props: AppealDetailsSidebarProps) {
-	const {
-		chat,
-		actRequested = false,
-		onRequestAct,
-		closing = false,
-		onCloseAppeal,
-		onClose,
-		className,
-	} = props;
+	const { chat, closing = false, onCloseAppeal, onClose, className } = props;
 	const titleId = useId();
 	const status = chat.status ?? "in_progress";
 	const statusMeta = STATUS_META[status];
-	const showActAction = status === "in_progress";
 	const showCloseAction = status !== "close";
 
 	return (
@@ -84,31 +73,17 @@ export function AppealDetailsSidebar(props: AppealDetailsSidebarProps) {
 				)}
 			</article>
 
-			{(showActAction || showCloseAction) && (
+			{showCloseAction && (
 				<div className={styles.actions}>
-					{showActAction && (
-						<Button
-							variant="outline"
-							type="button"
-							className={styles.actButton}
-							disabled={actRequested || closing}
-							onClick={onRequestAct}
-						>
-							{actRequested ? APPEAL_DETAILS_ACT_REQUESTED_LABEL : APPEAL_DETAILS_ACT_LABEL}
-						</Button>
-					)}
-
-					{showCloseAction && (
-						<Button
-							variant="accent"
-							type="button"
-							className={styles.closeButton}
-							disabled={closing}
-							onClick={onCloseAppeal}
-						>
-							{closing ? APPEAL_DETAILS_CLOSING_LABEL : APPEAL_DETAILS_CLOSE_LABEL}
-						</Button>
-					)}
+					<Button
+						variant="accent"
+						type="button"
+						className={styles.closeButton}
+						disabled={closing}
+						onClick={onCloseAppeal}
+					>
+						{closing ? APPEAL_DETAILS_CLOSING_LABEL : APPEAL_DETAILS_CLOSE_LABEL}
+					</Button>
 				</div>
 			)}
 		</div>
