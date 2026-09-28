@@ -12,6 +12,30 @@
 	<body>
 		<div id="root"></div>
 		<script src="https://st.max.ru/js/max-web-app.js"></script>
+		<script>
+			// Временная диагностика iOS: ошибки и снимок состояния уходят в access-лог nginx
+			(function () {
+				function diag(kind, msg) {
+					try {
+						new Image().src = "/api/__diag?k=" + kind + "&m=" + encodeURIComponent(String(msg).slice(0, 700));
+					} catch (e) {}
+				}
+				addEventListener("error", function (e) {
+					diag("error", e.message + " @ " + e.filename + ":" + e.lineno + ":" + e.colno + " " + (e.error && e.error.stack));
+				});
+				addEventListener("unhandledrejection", function (e) {
+					diag("rejection", e.reason && (e.reason.stack || e.reason.message) || e.reason);
+				});
+				var consoleError = console.error;
+				console.error = function () {
+					diag("console", Array.prototype.map.call(arguments, function (a) { return a && a.stack || String(a); }).join(" "));
+					return consoleError.apply(console, arguments);
+				};
+				setTimeout(function () {
+					diag("state", location.href + " | " + document.body.innerText.replace(/\s+/g, " ").slice(0, 200));
+				}, 5000);
+			})();
+		</script>
 		<script type="module" src="/src/main.tsx"></script>
 	</body>
 </html>
