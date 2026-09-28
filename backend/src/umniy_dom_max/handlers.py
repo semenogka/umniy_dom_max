@@ -10,6 +10,7 @@ from loguru import logger
 from datetime import datetime
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from umniy_dom_max.attachments import mail_attachments, prepare_attachments
 from umniy_dom_max.db import repository
 from umniy_dom_max.db.models import Appeal
 from umniy_dom_max.settings import Settings
@@ -44,13 +45,6 @@ router = fastapi.APIRouter()
 APPEAL_MAIL_HEADERS = {"X-Domovoy": "appeal"}
 
 
-def _mail_attachments(images: list[str]) -> list[dict]:
-    return [
-        {"data": b64, "filename": f"photo_{i}.jpg", "mime": "image/jpeg"}
-        for i, b64 in enumerate(images)
-    ]
-
-
 @router.post("/users/demo", response_model=UserOut, tags=["Пользователи"],
              summary="Создать демо-пользователя",
              description="Создаёт демо-пользователя со случайными домами, если он ещё не существует. Возвращает данные пользователя.")
@@ -80,6 +74,7 @@ async def create_appeal(
     mail: MailDep,
     settings: SettingsDep,
 ):
+    data.attachments = await asyncio.to_thread(prepare_attachments, data.attachments)
     try:
         classification = (await agent.run(data.text)).output
     except Exception as e:
@@ -111,7 +106,7 @@ async def create_appeal(
         f"<b>План действий</b>\n{escape(classification.action_plan)}"
     )
     mail_subject = f"🏠 Новое обращение от {user.name} с адресса {house.address} на тему {classification.problem_type} от {datetime.now()}"
-    attachments = _mail_attachments(data.attachments)
+    attachments = mail_attachments(data.attachments)
     await asyncio.to_thread(
         mail.send,
         to=settings.appeal_recipient,
@@ -299,6 +294,7 @@ async def send_message_appeal(
         raise HTTPException(404, "Пользователь не найден")
 
     sender = user.name
+    data.attachments = await asyncio.to_thread(prepare_attachments, data.attachments)
 
     if appeal.status == "close":
         return await _post_appeal_message(db, ws, appeal.id, data, sender, "Данное обращение уже закрыто.")
@@ -326,7 +322,7 @@ async def send_message_appeal(
             sender=sender,
             text=data.text,
         ),
-        attachments=_mail_attachments(data.attachments),
+        attachments=mail_attachments(data.attachments),
     )
 
     return await _post_appeal_message(
@@ -405,6 +401,7 @@ async def send_message(house_id: int, data: MessageIn, db: DbSession, ws: WsMana
     sender = user.name
     if not house:
         raise HTTPException(404, "Not found")
+    data.attachments = await asyncio.to_thread(prepare_attachments, data.attachments)
     message = await repository.add_house_message(
         db, house.id, data.user_id, sender, data.text, data.attachments
     )

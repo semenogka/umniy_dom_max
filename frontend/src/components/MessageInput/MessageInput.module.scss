@@ -94,6 +94,14 @@
 	background: rgb(0 0 0 / 40%);
 }
 
+.attachError {
+	margin: 0;
+	padding: 0 4px;
+	color: var(--danger-fg);
+	font-size: var(--text-caption-s-strong-size);
+	line-height: var(--text-caption-s-strong-line);
+}
+
 .composer {
 	display: grid;
 	grid-template-columns: 44px 1fr 44px;

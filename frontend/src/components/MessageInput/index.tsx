@@ -23,7 +23,9 @@ import {
 	getAttachmentExtLabel,
 	getAttachmentShortName,
 	getMessageInputClassName,
+	getRejectedFilesMessage,
 	isImageFile,
+	prepareAttachmentFiles,
 	readFileAsDataUrl,
 	revokeAttachmentDraft,
 	revokeAttachmentDrafts,
@@ -46,6 +48,8 @@ export function MessageInput(props: MessageInputProps) {
 	const [innerValue, setInnerValue] = useState(defaultValue);
 	const [attachments, setAttachments] = useState<MessageAttachmentDraft[]>([]);
 	const [sending, setSending] = useState(false);
+	const [preparing, setPreparing] = useState(false);
+	const [attachError, setAttachError] = useState<string | null>(null);
 	const fileInputRef = useRef<HTMLInputElement>(null);
 	const attachmentsRef = useRef(attachments);
 
@@ -55,7 +59,8 @@ export function MessageInput(props: MessageInputProps) {
 
 	const isControlled = value !== undefined;
 	const text = isControlled ? value : innerValue;
-	const canSend = (Boolean(text.trim()) || attachments.length > 0) && !disabled && !sending;
+	const busy = sending || preparing;
+	const canSend = (Boolean(text.trim()) || attachments.length > 0) && !disabled && !busy;
 
 	useEffect(() => {
 		return () => {
@@ -78,23 +83,39 @@ export function MessageInput(props: MessageInputProps) {
 	 * @returns {void}
 	 */
 	const handleAttachClick = (): void => {
-		if (disabled || sending) return;
+		if (disabled || busy) return;
 		fileInputRef.current?.click();
 	};
 
 	/**
-	 * Выбор файлов
+	 * Выбор файлов: сначала сжимаем, потом отсеиваем больше лимита
 	 * @param event - change file input
 	 * @returns {void}
 	 */
 	const handleFilesChange = (event: ChangeEvent<HTMLInputElement>): void => {
-		const files = event.target.files;
-		if (!files?.length) return;
-
-		const drafts = createAttachmentDrafts(files, attachments.length, MESSAGE_INPUT_MAX_ATTACHMENTS);
-		if (drafts.length) setAttachments((prev) => [...prev, ...drafts]);
-
+		const files = Array.from(event.target.files ?? []).slice(
+			0,
+			Math.max(0, MESSAGE_INPUT_MAX_ATTACHMENTS - attachments.length),
+		);
 		event.target.value = "";
+		if (!files.length) return;
+
+		setAttachError(null);
+		setPreparing(true);
+
+		prepareAttachmentFiles(files)
+			.then(({ accepted, rejected }) => {
+				const drafts = createAttachmentDrafts(
+					accepted,
+					attachmentsRef.current.length,
+					MESSAGE_INPUT_MAX_ATTACHMENTS,
+				);
+				if (drafts.length) setAttachments((prev) => [...prev, ...drafts]);
+				if (rejected.length) setAttachError(getRejectedFilesMessage(rejected));
+			})
+			.finally(() => {
+				setPreparing(false);
+			});
 	};
 
 	/**
@@ -103,6 +124,7 @@ export function MessageInput(props: MessageInputProps) {
 	 * @returns {void}
 	 */
 	const handleRemoveAttachment = (id: string): void => {
+		setAttachError(null);
 		setAttachments((prev) => {
 			const next = prev.filter((item) => item.id !== id);
 			const removed = prev.find((item) => item.id === id);
@@ -138,6 +160,7 @@ export function MessageInput(props: MessageInputProps) {
 				if (!isControlled) setInnerValue("");
 				revokeAttachmentDrafts(drafts);
 				setAttachments([]);
+				setAttachError(null);
 			})
 			.catch(() => undefined)
 			.finally(() => {
@@ -188,7 +211,7 @@ export function MessageInput(props: MessageInputProps) {
 									type="button"
 									className={styles.thumbRemove}
 									aria-label={`Удалить ${draft.file.name}`}
-									disabled={disabled || sending}
+									disabled={disabled || busy}
 									onClick={() => handleRemoveAttachment(draft.id)}
 								>
 									<Icon name="close" size={12} />
@@ -199,12 +222,18 @@ export function MessageInput(props: MessageInputProps) {
 				</div>
 			)}
 
+			{attachError && (
+				<p className={styles.attachError} role="alert">
+					{attachError}
+				</p>
+			)}
+
 			<div className={styles.composer}>
 				<Button
 					variant="icon"
 					type="button"
 					aria-label="Прикрепить файл"
-					disabled={disabled || sending || attachments.length >= MESSAGE_INPUT_MAX_ATTACHMENTS}
+					disabled={disabled || busy || attachments.length >= MESSAGE_INPUT_MAX_ATTACHMENTS}
 					onClick={handleAttachClick}
 				>
 					<Icon name="attachment" size="xl" />
@@ -237,7 +266,7 @@ export function MessageInput(props: MessageInputProps) {
 				multiple
 				tabIndex={-1}
 				aria-hidden
-				disabled={disabled || sending}
+				disabled={disabled || busy}
 				onChange={handleFilesChange}
 			/>
 

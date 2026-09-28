@@ -8,7 +8,7 @@ API мини-приложения и бот MAX в одном Python-пакет�
 
 ## Быстрый старт
 
-Нужны [uv](https://docs.astral.sh/uv/) и PostgreSQL. Проще всего поднять базу из корневого Compose:
+Нужны [uv](https://docs.astral.sh/uv/), PostgreSQL и libmagic (`brew install libmagic`), для сжатия PDF — ghostscript (`brew install ghostscript`). Проще всего поднять базу из корневого Compose:
 
 ```bash
 cp .env.example .env          # впишите GPT_TOKEN, MAX_TOKEN, MAIL_PASSWORD и DATABASE_URL
@@ -94,6 +94,8 @@ src/umniy_dom_max/
 | `GET /houses/{house_id}/messages` | общий чат дома |
 | `POST /houses/{house_id}/message` | написать в чат дома |
 | `GET /houses/{house_id}/appeals` | обращения по дому |
+
+Вложения приходят data URL в поле `attachments`. Формат определяется по содержимому (python-magic), неизвестные отклоняются с 415. Перед проверкой размера файл всегда сжимается ([attachments.py](src/umniy_dom_max/attachments.py)): картинки до 1600 px и JPEG q60, PDF через ghostscript `/ebook`, картинки внутри docx/xlsx/pptx. Больше 10 МБ после сжатия — 413.
 
 WebSocket: `/ws/houses/{house_id}?user_id=…` и `/ws/appeals/{appeal_id}?user_id=…`. Сервер присылает события `message`, `read`, `appeal_created` и `appeal_updated`. Клиент отправляет `{"type": "read", "message_ids": [...]}`, чтобы отметить сообщения прочитанными.
 
