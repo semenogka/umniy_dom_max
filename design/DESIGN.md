@@ -4,10 +4,10 @@
 
 | Что | Где |
 |---|---|
-| Прототип интерфейса (источник правды для верстки) | [design/domovoy-mini-app-v2.html](design/domovoy-mini-app-v2.html) |
+| Прототип интерфейса (удалён из репозитория, последняя версия — в истории git) | [domovoy-mini-app-v2.html](https://github.com/semenogka/umniy_dom_max/blob/2f04377943970279378cf66be21406615a616877/design/domovoy-mini-app-v2.html) |
 | Дизайн-система в Figma | [Домовой — Design System](https://www.figma.com/design/jTtEJUrBSVTdNOQUAhNA6Q) |
-| Текущий фронт Mini App (заглушка) | [frontend/index.html](frontend/index.html) |
-| Бот MAX + классификатор обращений (LLM) | [backend/bot.py](backend/bot.py), [backend/gpt_client.py](backend/gpt_client.py) |
+| Фронт Mini App | [frontend/](../frontend/README.md) |
+| Бот MAX + классификатор обращений (LLM) | [cmd/bot.py](../backend/src/umniy_dom_max/cmd/bot.py), [llm.py](../backend/src/umniy_dom_max/llm.py) |
 
 Токены в Figma получены реверс-инжинирингом прототипа: сначала опись всех сырых значений, потом группировка близких, потом переменные → компоненты → экраны. Все отклонения от кода перечислены в разделе [Расхождения с кодом](#расхождения-с-кодом).
 
