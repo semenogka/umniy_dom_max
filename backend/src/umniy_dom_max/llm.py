@@ -5,7 +5,7 @@ from pydantic_ai import Agent, PromptedOutput
 from pydantic_ai.models.openai import OpenAIChatModel, OpenAIChatModelSettings
 from pydantic_ai.providers.openai import OpenAIProvider
 
-from umniy_dom_max.prompts import CLASSIFCATE_PROMPT, SYSTEM_PROMPT, UK_REPLY_PROMPT
+from umniy_dom_max.prompts import ADDITION_PROMPT, CLASSIFCATE_PROMPT, SYSTEM_PROMPT, UK_REPLY_PROMPT
 from umniy_dom_max.settings import Settings
 
 ProblemType = Literal[
@@ -35,6 +35,10 @@ class ClassificationAnswer(BaseModel):
     result: Literal["N", "dop", "checked"]
 
 
+class AdditionCheck(BaseModel):
+    result: Literal["OK", "N"]
+
+
 class AppealClassification(BaseModel):
     # N — текст не является обращением
     result: Literal["OK", "N"]
@@ -50,6 +54,7 @@ class AppealClassification(BaseModel):
 AppealAgent = Agent[None, AppealClassification]
 AnswerAgent = Agent[None, ClassificationAnswer]
 UkAgent = Agent[None, str]
+AdditionAgent = Agent[None, AdditionCheck]
 
 
 def _create_agent(settings: Settings, name: str, output_type, instructions: str) -> Agent:
@@ -77,3 +82,7 @@ def create_answer_agent(settings: Settings) -> AnswerAgent:
 
 def create_uk_agent(settings: Settings) -> UkAgent:
     return _create_agent(settings, "uk_responder", str, UK_REPLY_PROMPT)
+
+
+def create_addition_agent(settings: Settings) -> AdditionAgent:
+    return _create_agent(settings, "addition_checker", AdditionCheck, ADDITION_PROMPT)

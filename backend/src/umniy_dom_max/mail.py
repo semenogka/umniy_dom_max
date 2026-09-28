@@ -6,7 +6,10 @@ import re
 import smtplib
 from email.message import EmailMessage
 from email.policy import default
-from email.utils import make_msgid
+from email.utils import formatdate, make_msgid
+
+# IMAP-метка «обработано ботом»: не зависит от \Seen, который ставит человек, открыв письмо в Roundcube
+PROCESSED = "$Domovoy"
 
 
 class Mail:
@@ -28,6 +31,7 @@ class Mail:
         msg["From"] = self.user
         msg["To"] = to
         msg["Subject"] = subject
+        msg["Date"] = formatdate(localtime=True)
         msg["Message-ID"] = make_msgid(domain=self.user.rpartition("@")[2] or None)
         for name, value in (headers or {}).items():
             msg[name] = value
@@ -54,25 +58,37 @@ class Mail:
             smtp.send_message(msg)
         return msg["Message-ID"]
 
-    # возвращает непрочитанные письма с UID, не помечая их прочитанными (BODY.PEEK)
+    # возвращает письма без метки PROCESSED с UID, ничего не помечая (BODY.PEEK)
     def read(self) -> list[tuple[bytes, EmailMessage]]:
         with imaplib.IMAP4_SSL(self.host) as imap:
             imap.login(self.user, self.password)
             imap.select("INBOX")
-            _, data = imap.uid("search", None, "UNSEEN")
+            _, data = imap.uid("search", None, "UNKEYWORD", PROCESSED)
             messages = []
             for uid in data[0].split():
                 _, raw = imap.uid("fetch", uid, "(BODY.PEEK[])")
                 messages.append((uid, email.message_from_bytes(raw[0][1], policy=default)))
             return messages
 
-    def mark_seen(self, uids: list[bytes]) -> None:
+    def mark_processed(self, uids: list[bytes]) -> None:
         if not uids:
             return
         with imaplib.IMAP4_SSL(self.host) as imap:
             imap.login(self.user, self.password)
             imap.select("INBOX")
-            imap.uid("store", b",".join(uids), "+FLAGS", "(\\Seen)")
+            imap.uid("store", b",".join(uids), "+FLAGS", f"(\\Seen {PROCESSED})")
+
+    def init_processed(self) -> None:
+        """Первый запуск с меткой: всё уже прочитанное считаем обработанным,
+        иначе бот заново разберёт старые письма."""
+        with imaplib.IMAP4_SSL(self.host) as imap:
+            imap.login(self.user, self.password)
+            imap.select("INBOX")
+            if imap.uid("search", None, "KEYWORD", PROCESSED)[1][0]:
+                return
+            uids = imap.uid("search", None, "SEEN")[1][0].split()
+            if uids:
+                imap.uid("store", b",".join(uids), "+FLAGS", f"({PROCESSED})")
 
     def html_to_text(self, html: str) -> str:
         # убираем <script>/<style> вместе с содержимым

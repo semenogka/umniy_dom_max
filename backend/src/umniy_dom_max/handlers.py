@@ -1,5 +1,6 @@
 import asyncio
 import json
+import re
 from html import escape
 
 import fastapi
@@ -12,7 +13,14 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from umniy_dom_max.db import repository
 from umniy_dom_max.db.models import Appeal
 from umniy_dom_max.settings import Settings
-from umniy_dom_max.dependencies import AppealAgentDep, DbSession, MailDep, SettingsDep, WsManagerDep
+from umniy_dom_max.dependencies import (
+    AdditionAgentDep,
+    AppealAgentDep,
+    DbSession,
+    MailDep,
+    SettingsDep,
+    WsManagerDep,
+)
 from umniy_dom_max import html as html_templates
 from umniy_dom_max.schemas import (
     STATUS_LABELS,
@@ -276,7 +284,7 @@ async def send_message_appeal(
     appeal_id: int,
     data: MessageIn,
     db: DbSession,
-    agent: AppealAgentDep,
+    agent: AdditionAgentDep,
     ws: WsManagerDep,
     mail: MailDep,
     settings: SettingsDep,
@@ -295,9 +303,16 @@ async def send_message_appeal(
     if appeal.status == "close":
         return await _post_appeal_message(db, ws, appeal.id, data, sender, "Данное обращение уже закрыто.")
 
-    classification = (await agent.run(data.text)).output
+    # дополнение проверяем в контексте обращения и последнего сообщения (обычно вопрос УК);
+    # одни фото без текста принимаем без проверки
+    if data.text.strip():
+        last = re.sub(r"</?b>", "", appeal.messages[-1].text) if appeal.messages else ""
+        prompt = f"Обращение:\n{appeal.text}\n\nПоследнее сообщение в чате:\n{last}\n\nНовое сообщение жителя:\n{data.text}"
+        check = (await agent.run(prompt)).output
+    else:
+        check = None
 
-    if classification.result == "N":
+    if check and check.result == "N":
         return await _post_appeal_message(db, ws, appeal.id, data, sender, "Это не является дополнением к обращению.")
 
     await asyncio.to_thread(

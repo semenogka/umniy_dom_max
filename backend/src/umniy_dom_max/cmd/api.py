@@ -12,7 +12,12 @@ from starlette.middleware.cors import CORSMiddleware
 
 from umniy_dom_max.db.database import create_engine, create_sessionmaker, init_db
 from umniy_dom_max.handlers import router
-from umniy_dom_max.llm import create_answer_agent, create_appeal_agent, create_uk_agent
+from umniy_dom_max.llm import (
+    create_addition_agent,
+    create_answer_agent,
+    create_appeal_agent,
+    create_uk_agent,
+)
 from umniy_dom_max.mail import Mail
 from umniy_dom_max.mail_monitoring import mail_checker
 from umniy_dom_max.settings import Settings
@@ -48,6 +53,7 @@ def main():
         app.state.settings = settings
         app.state.sessionmaker = create_sessionmaker(engine)
         app.state.appeal_agent = create_appeal_agent(settings)
+        app.state.addition_agent = create_addition_agent(settings)
         app.state.answer_agent = create_answer_agent(settings)
         app.state.ws_manager = ConnectionManager()
         app.state.mail = Mail(settings.mail_host, settings.mail_user, settings.mail_password)

@@ -25,8 +25,8 @@ def strip_quote(text: str) -> str:
 
 
 async def check_mailbox(agent, uk_agent, db, settings, ws, mail):
-    # IMAP блокирующий. Письмо помечается прочитанным только после обработки,
-    # при ошибке LLM или БД оно останется непрочитанным и попадёт в следующий проход.
+    # IMAP блокирующий. Письмо получает метку PROCESSED только после обработки,
+    # при ошибке LLM или БД оно останется без метки и попадёт в следующий проход.
     # ponytail: письмо, которое падает всегда, будет перечитываться каждые 10 с — нужен счётчик попыток, если такое появится
     messages = await asyncio.to_thread(mail.read)
     done: list[bytes] = []
@@ -45,7 +45,7 @@ async def check_mailbox(agent, uk_agent, db, settings, ws, mail):
                 continue
             done.append(uid)
     finally:
-        await asyncio.to_thread(mail.mark_seen, done)
+        await asyncio.to_thread(mail.mark_processed, done)
 
 
 async def reply_as_uk(uk_agent, mail, msg):
@@ -77,6 +77,10 @@ async def handle_message(agent, db, settings, ws, mail, msg):
 
 
 async def mail_checker(agent, uk_agent, sessionmaker, settings, ws, mail):
+    try:
+        await asyncio.to_thread(mail.init_processed)
+    except Exception:
+        logger.exception("Не удалось разметить старые письма")
     while True:
         try:
             async with sessionmaker() as db:

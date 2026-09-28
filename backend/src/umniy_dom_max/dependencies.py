@@ -5,7 +5,7 @@ import fastapi
 from fastapi import Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from umniy_dom_max.llm import AppealAgent, AnswerAgent
+from umniy_dom_max.llm import AdditionAgent, AnswerAgent, AppealAgent
 from umniy_dom_max.mail import Mail
 from umniy_dom_max.settings import Settings
 from umniy_dom_max.ws import ConnectionManager
@@ -18,6 +18,10 @@ async def get_db(request: fastapi.Request) -> AsyncIterator[AsyncSession]:
 
 def get_appeal_agent(request: fastapi.Request) -> AppealAgent:
     return request.app.state.appeal_agent
+
+
+def get_addition_agent(request: fastapi.Request) -> AdditionAgent:
+    return request.app.state.addition_agent
 
 
 def get_answer_agent(request: fastapi.Request) -> AnswerAgent:
@@ -38,6 +42,7 @@ def get_mail(request: fastapi.Request) -> Mail:
 
 DbSession = Annotated[AsyncSession, Depends(get_db)]
 AppealAgentDep = Annotated[AppealAgent, Depends(get_appeal_agent)]
+AdditionAgentDep = Annotated[AdditionAgent, Depends(get_addition_agent)]
 AnswerAgentDep = Annotated[AnswerAgent, Depends(get_answer_agent)]
 SettingsDep = Annotated[Settings, Depends(get_settings)]
 WsManagerDep = Annotated[ConnectionManager, Depends(get_ws_manager)]
