@@ -51,7 +51,9 @@ def main():
         app.state.answer_agent = check_answer(settings)
         app.state.ws_manager = ConnectionManager()
 
-        app.state.mail_task = asyncio.create_task(mail_checker(app.state.answer_agent, app.state.sessionmaker))
+        app.state.mail_task = asyncio.create_task(
+            mail_checker(app.state.answer_agent, app.state.sessionmaker, settings, app.state.ws_manager)
+        )
 
         yield
 
