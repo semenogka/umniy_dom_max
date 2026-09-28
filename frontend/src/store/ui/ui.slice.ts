@@ -24,6 +24,11 @@ const uiSlice = createSlice({
 			state.loadingCount = Math.max(0, state.loadingCount - 1);
 			state.isLoading = state.loadingCount > 0;
 		},
+		/** Принудительный сброс (watchdog / зависший show без hide) */
+		resetLoader(state) {
+			state.loadingCount = 0;
+			state.isLoading = false;
+		},
 		setLoading(state, action: PayloadAction<boolean>) {
 			if (action.payload) {
 				state.loadingCount += 1;
@@ -37,5 +42,5 @@ const uiSlice = createSlice({
 	},
 });
 
-export const { showLoader, hideLoader, setLoading } = uiSlice.actions;
+export const { showLoader, hideLoader, resetLoader, setLoading } = uiSlice.actions;
 export const uiReducer = uiSlice.reducer;

@@ -9,3 +9,6 @@ export const LOADER_PROGRESS_HEIGHT = 3;
 
 /** Длительность появления и скрытия в мс */
 export const LOADER_DURATION = 220;
+
+/** Сброс зависшего глобального лоадера, мс */
+export const LOADER_WATCHDOG_MS = 10_000;

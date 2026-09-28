@@ -7,7 +7,6 @@ import {
 import { getMaxUserId } from "@/max/webApp";
 import { upsertServerMessage, withDelivery } from "@/store/chatMessage";
 import type { HouseMessage } from "@/store/houses/houses.types";
-import { hideLoader, showLoader } from "@/store/ui/ui.slice";
 
 import type { HouseChatState } from "./houseChat.types";
 
@@ -25,17 +24,13 @@ const initialState: HouseChatState = {
  */
 export const fetchHouseMessages = createAsyncThunk(
 	"houseChat/fetchHouseMessages",
-	async (houseId: number, { dispatch, rejectWithValue }) => {
-		dispatch(showLoader());
-
+	async (houseId: number, { rejectWithValue }) => {
 		try {
 			const house = await fetchHouseMessagesRequest(houseId);
 			return { houseId, messages: Array.isArray(house.messages) ? house.messages : [] };
 		} catch (error) {
 			const message = error instanceof Error ? error.message : "Не удалось загрузить сообщения";
 			return rejectWithValue(message);
-		} finally {
-			dispatch(hideLoader());
 		}
 	},
 );

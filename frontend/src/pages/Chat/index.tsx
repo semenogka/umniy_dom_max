@@ -94,17 +94,21 @@ export function ChatPage() {
 	const [housePickerOpen, setHousePickerOpen] = useState(false);
 	const [appealDetailsOpen, setAppealDetailsOpen] = useState(false);
 	const [actRequestedByChat, setActRequestedByChat] = useState<Record<string, boolean>>({});
+	/** WS дома после appeals (messages не блокируют) */
+	const [houseSocketReady, setHouseSocketReady] = useState(false);
+	/** WS заявки после попытки загрузить messages */
+	const [appealSocketReady, setAppealSocketReady] = useState(false);
 
 	const houseId = houseIdParam ?? (selectedHouse ? String(selectedHouse.id) : undefined);
 	const isHouseChat = !appealId;
 	const appealChatId = appealId && Number.isFinite(Number(appealId)) ? Number(appealId) : null;
 	const { sendRead: sendHouseRead } = useHouseSocket({
-		houseId: selectedHouse?.id ?? null,
+		houseId: houseSocketReady ? (selectedHouse?.id ?? null) : null,
 		userId: currentUser?.id ?? null,
 		listenChat: isHouseChat,
 	});
 	const { sendRead: sendAppealRead } = useAppealSocket({
-		appealId: isHouseChat ? null : appealChatId,
+		appealId: appealSocketReady && !isHouseChat ? appealChatId : null,
 		userId: currentUser?.id ?? null,
 	});
 	const sendRead = isHouseChat ? sendHouseRead : sendAppealRead;
@@ -161,24 +165,76 @@ export function ChatPage() {
 	}, [dispatch, houses, housesStatus, houseIdParam, navigate, selectedHouse?.id]);
 
 	useEffect(() => {
-		if (!selectedHouse) return;
+		if (!selectedHouse) {
+			setHouseSocketReady(false);
+			return;
+		}
 
-		dispatch(fetchHouseAppeals(selectedHouse.id));
-	}, [dispatch, selectedHouse?.id]);
+		let cancelled = false;
 
-	useEffect(() => {
-		if (!selectedHouse || !isHouseChat) return;
+		setHouseSocketReady(false);
 
-		dispatch(fetchHouseMessages(selectedHouse.id));
+		/**
+		 * Appeals → затем messages (последовательно, без гонки fetch в MAX)
+		 * @returns {Promise<void>}
+		 */
+		const load = async (): Promise<void> => {
+			try {
+				await dispatch(fetchHouseAppeals(selectedHouse.id)).unwrap();
+			} catch {
+				console.error("Не удалось загрузить обращения дома");
+			}
+
+			if (cancelled) return;
+			setHouseSocketReady(true);
+
+			if (!isHouseChat) return;
+
+			try {
+				await dispatch(fetchHouseMessages(selectedHouse.id)).unwrap();
+			} catch {
+				console.error("Не удалось загрузить сообщения дома");
+			}
+		};
+
+		load();
+
+		return () => {
+			cancelled = true;
+		};
 	}, [dispatch, isHouseChat, selectedHouse?.id]);
 
 	useEffect(() => {
-		if (!appealId) return;
+		if (!appealId) {
+			setAppealSocketReady(false);
+			return;
+		}
 
 		const id = Number(appealId);
 		if (!Number.isFinite(id)) return;
 
-		dispatch(fetchAppealMessages(id));
+		let cancelled = false;
+		setAppealSocketReady(false);
+
+		/**
+		 * Сообщения заявки, затем WS
+		 * @returns {Promise<void>}
+		 */
+		const load = async (): Promise<void> => {
+			try {
+				await dispatch(fetchAppealMessages(id)).unwrap();
+			} catch {
+				console.error("Не удалось загрузить сообщения заявки");
+			}
+
+			if (!cancelled) setAppealSocketReady(true);
+		};
+
+		load();
+
+		return () => {
+			cancelled = true;
+		};
 	}, [appealId, dispatch]);
 
 	/**
