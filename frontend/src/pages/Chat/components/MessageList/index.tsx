@@ -1,4 +1,13 @@
-import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import {
+	memo,
+	type ReactNode,
+	useCallback,
+	useEffect,
+	useLayoutEffect,
+	useMemo,
+	useRef,
+	useState,
+} from "react";
 
 import { DateChip } from "@/components/DateChip";
 import { Icon } from "@/components/Icon";
@@ -17,6 +26,33 @@ import {
 	syncMessageListDateStuck,
 } from "./MessageList.service";
 import type { MessageListProps, SenderGroupProps } from "./MessageList.types";
+
+const HTML_ENTITIES: Record<string, string> = {
+	"&amp;": "&",
+	"&lt;": "<",
+	"&gt;": ">",
+	"&quot;": '"',
+	"&#x27;": "'",
+};
+
+/**
+ * Текст Домового: бэкенд экранирует всё внешнее и размечает только <b>,
+ * поэтому разбираем <b> и сущности сами, без innerHTML
+ * @param text - текст с <b> и HTML-сущностями
+ */
+function renderBotText(text: string): ReactNode[] {
+	const unescape = (value: string) =>
+		value.replace(/&(amp|lt|gt|quot|#x27);/g, (entity) => HTML_ENTITIES[entity]);
+
+	return text.split(/(<b>[\s\S]*?<\/b>)/).map((part, index) =>
+		part.startsWith("<b>") && part.endsWith("</b>") ? (
+			// biome-ignore lint/suspicious/noArrayIndexKey: части неизменяемого текста
+			<strong key={index}>{unescape(part.slice(3, -4))}</strong>
+		) : (
+			unescape(part)
+		),
+	);
+}
 
 /** Группа сообщений одного отправителя */
 const SenderGroup = memo(function SenderGroup({
@@ -73,7 +109,7 @@ const SenderGroup = memo(function SenderGroup({
 									</a>
 								),
 							)}
-							{message.text}
+							{message.html ? renderBotText(message.text) : message.text}
 						</Message>
 					</div>
 				);

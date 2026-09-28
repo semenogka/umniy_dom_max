@@ -5,7 +5,7 @@ from pydantic_ai import Agent, PromptedOutput
 from pydantic_ai.models.openai import OpenAIChatModel, OpenAIChatModelSettings
 from pydantic_ai.providers.openai import OpenAIProvider
 
-from umniy_dom_max.prompts import SYSTEM_PROMPT, CLASSIFCATE_PROMPT
+from umniy_dom_max.prompts import CLASSIFCATE_PROMPT, SYSTEM_PROMPT, UK_REPLY_PROMPT
 from umniy_dom_max.settings import Settings
 
 ProblemType = Literal[
@@ -38,6 +38,7 @@ class ClassificationAnswer(BaseModel):
 class AppealClassification(BaseModel):
     # N — текст не является обращением
     result: Literal["OK", "N"]
+    title: str
     problem_type: ProblemType
     urgency: Urgency
     responsible_org: ResponsibleOrg
@@ -48,6 +49,7 @@ class AppealClassification(BaseModel):
 
 AppealAgent = Agent[None, AppealClassification]
 AnswerAgent = Agent[None, ClassificationAnswer]
+UkAgent = Agent[None, str]
 
 
 def _create_agent(settings: Settings, name: str, output_type, instructions: str) -> Agent:
@@ -58,7 +60,7 @@ def _create_agent(settings: Settings, name: str, output_type, instructions: str)
     return Agent(
         model,
         name=name,
-        output_type=PromptedOutput(output_type),
+        output_type=output_type if output_type is str else PromptedOutput(output_type),
         instructions=instructions,
         model_settings=OpenAIChatModelSettings(max_tokens=2048, openai_reasoning_effort="none"),
         retries=2,
@@ -71,3 +73,7 @@ def create_appeal_agent(settings: Settings) -> AppealAgent:
 
 def create_answer_agent(settings: Settings) -> AnswerAgent:
     return _create_agent(settings, "answer_classifier", ClassificationAnswer, CLASSIFCATE_PROMPT)
+
+
+def create_uk_agent(settings: Settings) -> UkAgent:
+    return _create_agent(settings, "uk_responder", str, UK_REPLY_PROMPT)

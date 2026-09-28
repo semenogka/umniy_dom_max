@@ -14,6 +14,9 @@ from umniy_dom_max.db.models import (
 )
 from umniy_dom_max.llm import AppealClassification
 
+# Имя системного пользователя (id=0), от которого пишет бот
+BOT_NAME = "Домовой"
+
 APPEAL_MESSAGES = selectinload(Appeal.messages).selectinload(AppealMessage.attachments)
 HOUSE_MESSAGES = selectinload(House.messages).selectinload(HouseMessage.attachments)
 
@@ -97,6 +100,7 @@ async def create_appeal(
 ) -> Appeal:
     appeal = Appeal(
         text=text,
+        title=classification.title,
         status="in_progress",
         author_id=author_id,
         house_id=house.id,
@@ -112,7 +116,7 @@ async def create_appeal(
     db.add(appeal)
     await db.flush()
     await _add_appeal_message(db, appeal.id, author_id, user_name, text, attachments)
-    await _add_appeal_message(db, appeal.id, 0, "bot", bot_text)
+    await _add_appeal_message(db, appeal.id, 0, BOT_NAME, bot_text)
     await db.commit()
     return await get_appeal_detailed(db, appeal.id)
 
@@ -124,7 +128,7 @@ async def set_appeal_status(
     system_msg: AppealMessage | None = None
     if system_text:
         system_msg = AppealMessage(
-            appeal_id=appeal.id, sender_id=0, sender="bot", text=system_text
+            appeal_id=appeal.id, sender_id=0, sender=BOT_NAME, text=system_text
         )
         db.add(system_msg)
     await db.commit()
@@ -145,7 +149,7 @@ async def add_appeal_message(
     """Сообщение жителя и ответ бота, в порядке создания."""
     ids = [(await _add_appeal_message(db, appeal_id, sender_id, sender, text, attachments)).id]
     if bot_text:
-        ids.append((await _add_appeal_message(db, appeal_id, 0, "bot", bot_text)).id)
+        ids.append((await _add_appeal_message(db, appeal_id, 0, BOT_NAME, bot_text)).id)
     await db.commit()
     query = (
         select(AppealMessage)

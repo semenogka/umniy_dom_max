@@ -6,6 +6,7 @@ import re
 import smtplib
 from email.message import EmailMessage
 from email.policy import default
+from email.utils import make_msgid
 
 
 class Mail:
@@ -21,11 +22,15 @@ class Mail:
         text: str,
         attachments: list[dict] | None = None,
         html: str | None = None,
+        headers: dict[str, str] | None = None,
     ) -> str:
         msg = EmailMessage()
         msg["From"] = self.user
         msg["To"] = to
         msg["Subject"] = subject
+        msg["Message-ID"] = make_msgid(domain=self.user.rpartition("@")[2] or None)
+        for name, value in (headers or {}).items():
+            msg[name] = value
         msg.set_content(text)
 
         if html:

@@ -22,6 +22,7 @@ def create_sessionmaker(engine: AsyncEngine) -> async_sessionmaker[AsyncSession]
 
 async def init_db(engine: AsyncEngine) -> None:
     from umniy_dom_max.db.models import User  # models импортируют Base отсюда
+    from umniy_dom_max.db.repository import BOT_NAME
 
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
@@ -30,5 +31,5 @@ async def init_db(engine: AsyncEngine) -> None:
         result = await conn.execute(select(User).where(User.id == 0))
         if result.scalar_one_or_none() is None:
             await conn.execute(
-                User.__table__.insert().values(id=0, name="bot", max_chat_id=None)
+                User.__table__.insert().values(id=0, name=BOT_NAME, max_chat_id=None)
             )

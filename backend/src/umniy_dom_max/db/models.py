@@ -94,6 +94,8 @@ class Appeal(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     text = Column(Text, nullable=False)
+    # Короткое название от LLM, у старых обращений пустое
+    title = Column(String, nullable=True)
     status = Column(String, default="in_progress")
     author_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     house_id = Column(ForeignKey("houses.id"), index=True, nullable=False)

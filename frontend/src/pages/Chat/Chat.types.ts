@@ -27,6 +27,8 @@ export type ChatMessage = {
 	author?: string;
 	/** Текст */
 	text: string;
+	/** Текст — разметка Домового (<b> + HTML-сущности) */
+	html?: boolean;
 	/** Время */
 	time: string;
 	/** Подпись дня в ленте */

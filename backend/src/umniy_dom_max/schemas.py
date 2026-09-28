@@ -68,6 +68,7 @@ class AppealOut(BaseModel):
 
     id: int
     text: str
+    title: str | None = None
     status: str
     author_id: int
     appeal_address: str | None

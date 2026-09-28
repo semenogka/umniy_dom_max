@@ -1,5 +1,6 @@
 import asyncio
 import json
+from html import escape
 
 import fastapi
 import requests
@@ -30,6 +31,9 @@ from umniy_dom_max.schemas import (
 )
 from umniy_dom_max.ws import ConnectionManager, appeal_room, house_room
 router = fastapi.APIRouter()
+
+# Метка наших писем в УК: мониторинг почты не принимает их за ответ УК
+APPEAL_MAIL_HEADERS = {"X-Domovoy": "appeal"}
 
 
 def _mail_attachments(images: list[str]) -> list[dict]:
@@ -84,19 +88,28 @@ async def create_appeal(
     if classification.result == "N":
         raise HTTPException(403, "Appeal is bad")
 
-    bot_text = (
+    summary_text = (
         f"Тип: {classification.problem_type}\n"
         f"Ответственный: {classification.responsible_org}\n"
         f"{classification.deadline_text}\n"
         f"План: {classification.action_plan}"
     )
+    # сообщения Домового — HTML с <b>, всё внешнее экранируется (фронт и MAX понимают только <b>)
+    bot_text = (
+        "<b>Обращение принято</b>\n\n"
+        f"Тип: <b>{escape(classification.problem_type)}</b>\n"
+        f"Ответственный: <b>{escape(classification.responsible_org)}</b>\n"
+        f"{escape(classification.deadline_text)}\n\n"
+        f"<b>План действий</b>\n{escape(classification.action_plan)}"
+    )
     mail_subject = f"🏠 Новое обращение от {user.name} с адресса {house.address} на тему {classification.problem_type} от {datetime.now()}"
     attachments = _mail_attachments(data.attachments)
     await asyncio.to_thread(
         mail.send,
-        to=settings.mail_to,
+        to=settings.appeal_recipient,
+        headers=APPEAL_MAIL_HEADERS,
         subject=mail_subject,
-        text=f"Новое обращение \n\n{data.text}\n\n{bot_text}",
+        text=f"Новое обращение \n\n{data.text}\n\n{summary_text}",
         html=html_templates.new_appeal_html(
             user_name=user.name,
             address=house.address,
@@ -134,9 +147,10 @@ async def change_appeal_status(
     """Меняет статус, пишет системное сообщение, уведомляет бота и WebSocket."""
     changed = appeal.status != status
     old_label = STATUS_LABELS.get(appeal.status, appeal.status)
-    msg = f"Статус по {appeal.id} изменён: {old_label} → {STATUS_LABELS[status]}."
-    if status != "close":
-        msg += f" Посмотрите ответ по вашему обращению: {mail_text}"
+    answer = ""
+    if status != "close" and mail_text.strip():
+        answer = f"\n\n<b>Ответ управляющей компании</b>\n{escape(mail_text.strip())}"
+    msg = f"Статус: {escape(old_label)} → <b>{STATUS_LABELS[status]}</b>{answer}"
 
     system_msg = await repository.set_appeal_status(
         db,
@@ -148,6 +162,8 @@ async def change_appeal_status(
         return appeal
 
     # уведа в чат
+    name = appeal.title or appeal.problem_type
+    heading = f"Обращение №{appeal.id}" + (f" · {escape(name)}" if name else "")
     try:
         user = await repository.get_user(db, appeal.author_id)
         chat_id = user.max_chat_id
@@ -157,7 +173,11 @@ async def change_appeal_status(
             params={"chat_id": chat_id},
             headers={"Authorization": settings.max_token},
             json={
-                "text": f"Статус обращения №{appeal.id} изменён на {STATUS_LABELS[status]}. {mail_text}"
+                "text": (
+                    f"<b>{heading}</b>\n"
+                    f"Статус: <b>{STATUS_LABELS[status]}</b>{answer}"
+                ),
+                "format": "html",
             },
             timeout=5,
             verify=False,
@@ -180,7 +200,7 @@ async def change_appeal_status(
                 "data": MessageOut(
                     id=system_msg.id,
                     sender_id=system_msg.sender_id,
-                    sender=system_msg.sender or "bot",
+                    sender=system_msg.sender,
                     text=system_msg.text,
                     created_at=system_msg.created_at,
                     is_read=bool(system_msg.is_read),
@@ -282,7 +302,8 @@ async def send_message_appeal(
 
     await asyncio.to_thread(
         mail.send,
-        to=settings.mail_to,
+        to=settings.appeal_recipient,
+        headers=APPEAL_MAIL_HEADERS,
         subject=appeal.mail_subject,
         text=data.text,
         html=html_templates.addition_html(

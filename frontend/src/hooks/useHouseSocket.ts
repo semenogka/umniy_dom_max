@@ -35,7 +35,7 @@ export function useHouseSocket(args: UseHouseSocketArgs) {
 		socket.setHandlers({
 			onEvent: (event) => {
 				if (event.type === "appeal_created") {
-					dispatch(appealCreated(event.data));
+					if (event.data.author_id === userId) dispatch(appealCreated(event.data));
 					return;
 				}
 

@@ -89,6 +89,9 @@ function toChatAttachment(url: string, name?: string): ChatAttachment {
  * @param message - сообщение с бэка
  * @param currentUserId - id текущего пользователя MAX
  */
+/** Id системного пользователя «Домовой» на бэке */
+const BOT_USER_ID = 0;
+
 export function toChatMessage(message: HouseMessage, currentUserId?: number | null): ChatMessage {
 	const isOut = currentUserId != null && message.sender_id === currentUserId;
 	const attachments = [...(message.attachments ?? [])]
@@ -102,6 +105,7 @@ export function toChatMessage(message: HouseMessage, currentUserId?: number | nu
 		kind: isOut ? "out" : "bot",
 		author: isOut ? undefined : message.sender,
 		text: message.text,
+		html: message.sender_id === BOT_USER_ID,
 		time: formatMessageTime(message.created_at),
 		dateLabel: formatMessageDateLabel(message.created_at),
 		delivery: isOut ? (message.is_read ? "read" : (message.delivery ?? "sent")) : undefined,
@@ -133,6 +137,17 @@ export function resolveHouseChat(
 }
 
 /**
+ * Название обращения: title от LLM, иначе тип проблемы с заглавной буквы
+ * @param appeal - обращение
+ */
+export function getAppealTitle(appeal: Appeal): string {
+	const title = appeal.title?.trim() || appeal.problem_type?.trim() || appeal.text.trim();
+	if (!title) return `Обращение №${appeal.id}`;
+
+	return title[0].toUpperCase() + title.slice(1);
+}
+
+/**
  * Чат обращения: шапка из списка + сообщения из стора
  * @param appealId - id обращения из URL
  * @param appeals - список обращений дома
@@ -161,7 +176,7 @@ export function resolveAppealChat(
 		};
 	}
 
-	const title = appeal.problem_type?.trim() || appeal.text.trim() || `Обращение №${appeal.id}`;
+	const title = getAppealTitle(appeal);
 
 	return {
 		id: String(appeal.id),
@@ -192,7 +207,7 @@ export function getChatSidebarHouse(house: House, housesCount: number): ChatSide
  * @param appeal - обращение
  */
 export function toChatSidebarAppealItem(appeal: Appeal): ChatSidebarAppealItem {
-	const title = appeal.problem_type?.trim() || appeal.text.trim() || `Обращение №${appeal.id}`;
+	const title = getAppealTitle(appeal);
 
 	return {
 		id: String(appeal.id),

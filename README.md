@@ -104,6 +104,7 @@ flowchart LR
 | `MAIL_PASSWORD` | для создания обращений | пароль ящика, с которого уходят письма в УК |
 | `MAIL_HOST`, `MAIL_USER` | нет | почтовый сервер и ящик, по умолчанию `mail.domovoy.stirkk.ru` |
 | `MAIL_TO` | нет | адрес УК, куда уходят обращения |
+| `UK_AUTOREPLY` | нет | демо: `true` — письма уходят в свой ящик, за УК через 5–10 с отвечает LLM |
 | `GPT_BASE_URL`, `GPT_MODEL` | нет | адрес OpenAI-совместимого API и модель |
 | `MAX_API_URL` | нет | по умолчанию `https://platform-api2.max.ru` |
 | `DATABASE_URL` | нет | в Compose всегда указывает на контейнер `postgres` |

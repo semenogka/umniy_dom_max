@@ -1,6 +1,7 @@
 import asyncio
 import json
 import sys
+from html import escape
 
 import requests
 import urllib3
@@ -63,7 +64,7 @@ def main():
     logger.info("MAX /me: {}", json.dumps(session.get(f"{api}/me").json(), ensure_ascii=False))
 
     def send_msg(chat_id, text, attachment=None):
-        body = {"text": text}
+        body = {"text": text, "format": "html"}
         if attachment:
             body["attachments"] = attachment
         r = session.post(f"{api}/messages", params={"chat_id": chat_id}, json=body)
@@ -129,14 +130,14 @@ def main():
                         send_msg(chat_id, "У вас пока нет обращений.")
                         continue
 
-                    lines = ["Ваши обращения:", ""]
+                    lines = ["<b>Ваши обращения</b>", ""]
                     for a in appeals:
                         if a.status != "close":
-                            lines.append(f"№{a.id} — {STATUS_LABELS.get(a.status, a.status)}")
-                            if a.problem_type:
-                                lines.append(f"  Тип: {a.problem_type}")
+                            name = a.title or a.problem_type
+                            lines.append(f"<b>№{a.id}</b>" + (f" · {escape(name)}" if name else ""))
+                            lines.append(f"Статус: <b>{STATUS_LABELS.get(a.status, a.status)}</b>")
                             if a.appeal_address:
-                                lines.append(f"  Адрес: {a.appeal_address}")
+                                lines.append(f"Адрес: {escape(a.appeal_address)}")
                             lines.append("")
 
                     send_msg(chat_id, "\n".join(lines), attachment=main_attachment)

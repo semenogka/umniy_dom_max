@@ -7,6 +7,8 @@ export type Appeal = {
 	id: number;
 	/** Текст обращения */
 	text: string;
+	/** Короткое название от LLM (у старых обращений null) */
+	title?: string | null;
 	/** Статус с бэка */
 	status: StatusValue;
 	/** Id автора */

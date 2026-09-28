@@ -16,7 +16,7 @@ const initialState: AppealsState = {
 };
 
 /**
- * Загрузка обращений дома
+ * Загрузка обращений дома — только свои
  * @param houseId - id дома
  */
 export const fetchHouseAppeals = createAsyncThunk(
@@ -25,7 +25,9 @@ export const fetchHouseAppeals = createAsyncThunk(
 		dispatch(showLoader());
 
 		try {
-			return await fetchHouseAppealsRequest(houseId);
+			const userId = getMaxUserId();
+			const appeals = await fetchHouseAppealsRequest(houseId);
+			return appeals.filter((appeal) => appeal.author_id === userId);
 		} catch (error) {
 			const message = error instanceof Error ? error.message : "Не удалось загрузить обращения";
 			return rejectWithValue(message);
@@ -101,9 +103,10 @@ const appealsSlice = createSlice({
 		appealCreated(state, action: PayloadAction<Appeal>) {
 			upsertAppeal(state.items, action.payload, true);
 		},
-		/** Обновление заявки из WebSocket */
+		/** Обновление заявки из WebSocket (только уже известной — чужие не добавляем) */
 		appealUpdated(state, action: PayloadAction<Appeal>) {
-			upsertAppeal(state.items, action.payload);
+			const index = state.items.findIndex((item) => item.id === action.payload.id);
+			if (index >= 0) state.items[index] = { ...state.items[index], ...action.payload };
 		},
 	},
 	extraReducers: (builder) => {

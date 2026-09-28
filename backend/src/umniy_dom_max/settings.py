@@ -26,3 +26,9 @@ class Settings(BaseSettings):
     mail_password: str = ""
     # Куда уходят письма с обращениями
     mail_to: str = "akuninsemen79@gmail.com"
+    # Демо: письма уходят в собственный ящик, а за УК отвечает LLM через 5–10 с
+    uk_autoreply: bool = False
+
+    @property
+    def appeal_recipient(self) -> str:
+        return self.mail_user if self.uk_autoreply else self.mail_to

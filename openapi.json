@@ -658,6 +658,17 @@
             "type": "string",
             "title": "Text"
           },
+          "title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title"
+          },
           "status": {
             "type": "string",
             "title": "Status"
@@ -821,6 +832,17 @@
           "text": {
             "type": "string",
             "title": "Text"
+          },
+          "title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title"
           },
           "status": {
             "type": "string",
