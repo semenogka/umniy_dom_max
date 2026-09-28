@@ -1,3 +1,4 @@
+import asyncio
 import json
 import sys
 
@@ -5,7 +6,8 @@ import requests
 import urllib3
 from loguru import logger
 
-from umniy_dom_max.schemas import DemoUserIn
+from umniy_dom_max.db import repository
+from umniy_dom_max.db.database import create_engine, create_sessionmaker
 from umniy_dom_max.settings import Settings
 
 main_attachment = [
@@ -35,6 +37,23 @@ def main():
         raise RuntimeError("MAX_TOKEN не задан")
 
     api = settings.max_api_url
+
+    # Бот синхронный, а репозиторий async — гоняем запросы к БД в одном event loop
+    runner = asyncio.Runner()
+    sessionmaker = create_sessionmaker(create_engine(settings.database_url))
+
+    async def register_user(user_id, name, chat_id):
+        async with sessionmaker() as db:
+            if await repository.get_user(db, user_id):
+                return
+            houses = await repository.get_random_houses(db, 2)
+            if not houses:
+                raise RuntimeError("В БД нет домов — засейте houses")
+            await repository.create_user(db, user_id, name, chat_id, houses)
+
+    async def user_appeals(user_id):
+        async with sessionmaker() as db:
+            return await repository.list_user_appeals(db, user_id)
 
     session = requests.Session()
     session.verify = False
@@ -77,11 +96,12 @@ def main():
                     logger.warning(f"bot_started: не хватает данных — {update}")
                     continue
 
-                data = DemoUserIn(user_id=user_id, chat_id=chat_id, name=name)
-                status = requests.post(
-                    "http://localhost:8000/users/demo", json=data.model_dump()
-                )
-                print(status.status_code, data)
+                try:
+                    runner.run(register_user(user_id, name, chat_id))
+                except Exception as e:
+                    logger.error(f"Ошибка регистрации пользователя {user_id}: {e}")
+                    send_msg(chat_id, "Не удалось зарегистрироваться, попробуйте позже.")
+                    continue
                 send_msg(
                     chat_id,
                     "Вы успешно зарегестрировались в Домовой! Перейдите в мини приложение, чтобы",
@@ -98,12 +118,7 @@ def main():
                         continue
 
                     try:
-                        r = requests.get(
-                            f"http://localhost:8000/users/{user_id}/appeals/short",
-                            timeout=10,
-                        )
-                        r.raise_for_status()
-                        appeals = r.json()
+                        appeals = runner.run(user_appeals(user_id))
                     except Exception as e:
                         logger.error(f"Ошибка получения обращений: {e}")
                         send_msg(chat_id, "Не удалось загрузить обращения.")
@@ -121,13 +136,13 @@ def main():
                     }
                     lines = ["Ваши обращения:", ""]
                     for a in appeals:
-                        status = status_map.get(a.get("status", ""), a.get("status", ""))
+                        status = status_map.get(a.status, a.status)
                         if status != "close":
-                            lines.append(f"№{a['id']} — {status}")
-                            if a.get("problem_type"):
-                                lines.append(f"  Тип: {a['problem_type']}")
-                            if a.get("appeal_address"):
-                                lines.append(f"  Адрес: {a['appeal_address']}")
+                            lines.append(f"№{a.id} — {status}")
+                            if a.problem_type:
+                                lines.append(f"  Тип: {a.problem_type}")
+                            if a.appeal_address:
+                                lines.append(f"  Адрес: {a.appeal_address}")
                             lines.append("")
 
                     send_msg(chat_id, "\n".join(lines), attachment=main_attachment)
