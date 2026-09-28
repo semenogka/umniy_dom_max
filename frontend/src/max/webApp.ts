@@ -10,6 +10,10 @@ export function getMaxUserId(): number | null {
 
 	if (import.meta.env.DEV) return 1;
 
+	// Локальный Docker вне MAX: демо-пользователь из сида
+	const demoId = Number(import.meta.env.VITE_DEMO_USER_ID);
+	if (demoId) return demoId;
+
 	return null;
 }
 

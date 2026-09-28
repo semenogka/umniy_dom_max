@@ -1,13 +1,69 @@
+# Локальный запуск всех компонентов: docker compose up --build
+x-backend: &backend
+  build:
+    context: ./backend
+  image: umniy-dom-max-backend
+  env_file:
+    - backend/.env
+  environment:
+    # Локально своя база и без прокси
+    DATABASE_URL: postgresql://postgres:postgres@postgres:5432/postgres
+    ROOT_PATH: ""
+
 services:
-  api:
-    build:
-      context: ./backend
-    restart: unless-stopped
-    command: ["api"]
-    env_file:
-      - backend/.env
-    # Локально без прокси, префикс не нужен
+  postgres:
+    image: postgres:17-alpine
     environment:
-      ROOT_PATH: ""
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: postgres
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+
+  # Тестовые дома, демо-пользователь и обращение (только локально, на проде не запускается)
+  seed:
+    <<: *backend
+    command: ["seed", "/seed/data.json"]
+    volumes:
+      - ./backend/seed:/seed:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  api:
+    <<: *backend
+    command: ["api"]
+    restart: unless-stopped
     ports:
       - "8000:8000"
+    depends_on:
+      seed:
+        condition: service_completed_successfully
+
+  bot:
+    <<: *backend
+    command: ["bot"]
+    restart: unless-stopped
+    depends_on:
+      seed:
+        condition: service_completed_successfully
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        VITE_API_URL: http://localhost:8000
+        VITE_DEMO_USER_ID: "1"
+    restart: unless-stopped
+    ports:
+      - "3000:80"
+    depends_on:
+      - api
+
+volumes:
+  pgdata:

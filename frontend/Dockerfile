@@ -6,6 +6,8 @@ RUN bun install --frozen-lockfile
 COPY . .
 # На проде API за тем же доменом под /api (nginx на хосте)
 ARG VITE_API_URL=/api
+# Только для локального запуска вне MAX (docker-compose.yml)
+ARG VITE_DEMO_USER_ID=
 RUN bun run build
 
 # Раздача статики
