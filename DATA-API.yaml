@@ -1,0 +1,212 @@
+# Обязательные проверки API «Домового»
+# Контракт методов и схем — openapi.json в корне репозитория.
+# Авторизации нет: пользователь передаётся через user_id (id пользователя MAX).
+# Идентификаторы ниже существуют на проде. В локальном Docker (base_url http://localhost:8000)
+# у демо-жителя те же user_id=1 и house_id=1, а обращение — appeal_id=1.
+
+version: "1.0"
+solution: "Домовой"
+base_url: "https://domovoy.stirkk.ru/api"
+
+roles:
+  resident:
+    description: "Житель дома, пишет в чат дома и создаёт обращения"
+    user_id: 1
+    house_id: 1
+  management:
+    description: "Управляющая компания: меняет статус обращения (в продукте — ответом на письмо)"
+
+checks:
+  - id: get_user
+    description: "Профиль жителя с домами и обращениями"
+    method: GET
+    path: "/users/{user_id}"
+    params:
+      path: { user_id: 1 }
+    role: resident
+    expected_status: [200]
+    response:
+      content_type: "application/json"
+      type: object
+      required_fields: [id, name, houses, appeals]
+
+  - id: get_user_unknown
+    description: "Несуществующий пользователь"
+    method: GET
+    path: "/users/{user_id}"
+    params:
+      path: { user_id: 999999 }
+    role: resident
+    expected_status: [404]
+    response:
+      content_type: "application/json"
+      type: object
+      required_fields: [detail]
+
+  - id: list_user_houses
+    description: "Дома, привязанные к жителю"
+    method: GET
+    path: "/users/{user_id}/houses"
+    params:
+      path: { user_id: 1 }
+    role: resident
+    expected_status: [200]
+    response:
+      content_type: "application/json"
+      type: array
+      item_required_fields: [id, address]
+
+  - id: get_house_chat
+    description: "Общий чат дома с историей сообщений"
+    method: GET
+    path: "/houses/{house_id}/messages"
+    params:
+      path: { house_id: 1 }
+    role: resident
+    expected_status: [200]
+    response:
+      content_type: "application/json"
+      type: object
+      required_fields: [id, address, messages]
+
+  - id: send_house_message
+    description: "Сообщение в общий чат дома"
+    method: POST
+    path: "/houses/{house_id}/message"
+    params:
+      path: { house_id: 1 }
+      headers: { Content-Type: "application/json" }
+      body: { text: "Проверка чата дома", user_id: 1 }
+    role: resident
+    expected_status: [200]
+    response:
+      content_type: "application/json"
+      type: object
+      required_fields: [id, sender_id, sender, text, created_at, is_read, attachments]
+
+  - id: create_appeal
+    description: "Новое обращение: LLM определяет тип, ответственного и срок, письмо уходит в УК"
+    method: POST
+    path: "/appeals/create"
+    params:
+      headers: { Content-Type: "application/json" }
+      body:
+        text: "В подъезде на третьем этаже второй день не горит свет"
+        user_id: 1
+        house_id: 1
+    role: resident
+    expected_status: [200]
+    response:
+      content_type: "application/json"
+      type: object
+      required_fields: [id, text, status, author_id, appeal_address, organization, problem_type, urgency, deadline_days, deadline_text, action_plan, created_at, messages]
+
+  - id: create_appeal_not_about_house
+    description: "Текст не про дом — обращение не создаётся"
+    method: POST
+    path: "/appeals/create"
+    params:
+      headers: { Content-Type: "application/json" }
+      body: { text: "Привет, как дела?", user_id: 1, house_id: 1 }
+    role: resident
+    expected_status: [403]
+    response:
+      content_type: "application/json"
+      type: object
+      required_fields: [detail]
+
+  - id: list_user_appeals
+    description: "Список обращений жителя"
+    method: GET
+    path: "/users/{user_id}/appeals/short"
+    params:
+      path: { user_id: 1 }
+    role: resident
+    expected_status: [200]
+    response:
+      content_type: "application/json"
+      type: array
+      item_required_fields: [id, text, status, author_id, problem_type, created_at]
+
+  - id: list_house_appeals
+    description: "Обращения по дому"
+    method: GET
+    path: "/houses/{house_id}/appeals"
+    params:
+      path: { house_id: 1 }
+    role: resident
+    expected_status: [200]
+    response:
+      content_type: "application/json"
+      type: array
+      item_required_fields: [id, text, status, appeal_address]
+
+  - id: get_appeal
+    description: "Обращение с перепиской"
+    method: GET
+    path: "/appeals/{appeal_id}/messages"
+    params:
+      path: { appeal_id: 3 }
+    role: resident
+    expected_status: [200]
+    response:
+      content_type: "application/json"
+      type: object
+      required_fields: [id, status, problem_type, messages]
+
+  - id: get_appeal_unknown
+    description: "Несуществующее обращение"
+    method: GET
+    path: "/appeals/{appeal_id}/messages"
+    params:
+      path: { appeal_id: 999999 }
+    role: resident
+    expected_status: [404]
+    response:
+      content_type: "application/json"
+      type: object
+      required_fields: [detail]
+
+  - id: add_appeal_message
+    description: "Дополнение к обращению"
+    method: POST
+    path: "/appeals/{appeal_id}/message"
+    params:
+      path: { appeal_id: 3 }
+      headers: { Content-Type: "application/json" }
+      body: { text: "Добавляю: вода не идёт и из крана на кухне", user_id: 1 }
+    role: resident
+    expected_status: [200]
+    response:
+      content_type: "application/json"
+      type: object
+      required_fields: [id, sender_id, sender, text, created_at, is_read, attachments]
+
+  - id: update_appeal_status
+    description: "Смена статуса обращения: житель получает уведомление в MAX"
+    method: PATCH
+    path: "/appeals/{appeal_id}/update"
+    params:
+      path: { appeal_id: 3 }
+      headers: { Content-Type: "application/json" }
+      body: { status: "dop", mail_text: "Уточните номер квартиры" }
+    role: management
+    expected_status: [200]
+    response:
+      content_type: "application/json"
+      type: object
+      required_fields: [id, status]
+
+  - id: validation_error
+    description: "Тело запроса без обязательных полей"
+    method: POST
+    path: "/appeals/create"
+    params:
+      headers: { Content-Type: "application/json" }
+      body: { text: "Нет user_id и house_id" }
+    role: resident
+    expected_status: [422]
+    response:
+      content_type: "application/json"
+      type: object
+      required_fields: [detail]
