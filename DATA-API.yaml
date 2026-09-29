@@ -2,9 +2,9 @@
 # Контракт методов и схем — openapi.json в корне репозитория.
 # Авторизации нет: пользователь передаётся через user_id (id пользователя MAX).
 # Идентификаторы ниже существуют на проде. В локальном Docker (base_url http://localhost:8000)
-# у демо-жителя те же user_id=1 и house_id=1, а обращение — appeal_id=1.
+# у демо-жителя тот же user_id=1, но дом — house_id=1, а обращение — appeal_id=1.
 
-version: "1.0"
+version: "1.1"
 solution: "Домовой"
 base_url: "https://domovoy.stirkk.ru/api"
 
@@ -12,11 +12,39 @@ roles:
   resident:
     description: "Житель дома, пишет в чат дома и создаёт обращения"
     user_id: 1
-    house_id: 1
+    house_id: 3
   management:
     description: "Управляющая компания: меняет статус обращения (в продукте — ответом на письмо)"
 
 checks:
+  - id: demo_login_existing
+    description: "Вход через демо-ЕСИА: существующий житель возвращается без пароля"
+    method: POST
+    path: "/users/demo"
+    params:
+      headers: { Content-Type: "application/json" }
+      body: { user_id: 1, chat_id: 1, name: "Демо-житель" }
+    role: resident
+    expected_status: [200]
+    response:
+      content_type: "application/json"
+      type: object
+      required_fields: [id, name, houses, appeals]
+
+  - id: demo_login_wrong_password
+    description: "Вход через демо-ЕСИА: новый житель с неверным паролем не регистрируется"
+    method: POST
+    path: "/users/demo"
+    params:
+      headers: { Content-Type: "application/json" }
+      body: { user_id: 999999, chat_id: 999999, name: "Проверка", password: "wrong" }
+    role: resident
+    expected_status: [401]
+    response:
+      content_type: "application/json"
+      type: object
+      required_fields: [detail]
+
   - id: get_user
     description: "Профиль жителя с домами и обращениями"
     method: GET
@@ -61,7 +89,7 @@ checks:
     method: GET
     path: "/houses/{house_id}/messages"
     params:
-      path: { house_id: 1 }
+      path: { house_id: 3 }
     role: resident
     expected_status: [200]
     response:
@@ -74,7 +102,7 @@ checks:
     method: POST
     path: "/houses/{house_id}/message"
     params:
-      path: { house_id: 1 }
+      path: { house_id: 3 }
       headers: { Content-Type: "application/json" }
       body: { text: "Проверка чата дома", user_id: 1 }
     role: resident
@@ -93,7 +121,7 @@ checks:
       body:
         text: "В подъезде на третьем этаже второй день не горит свет"
         user_id: 1
-        house_id: 1
+        house_id: 3
     role: resident
     expected_status: [200]
     response:
@@ -107,7 +135,7 @@ checks:
     path: "/appeals/create"
     params:
       headers: { Content-Type: "application/json" }
-      body: { text: "Привет, как дела?", user_id: 1, house_id: 1 }
+      body: { text: "Привет, как дела?", user_id: 1, house_id: 3 }
     role: resident
     expected_status: [403]
     response:
@@ -133,7 +161,7 @@ checks:
     method: GET
     path: "/houses/{house_id}/appeals"
     params:
-      path: { house_id: 1 }
+      path: { house_id: 3 }
     role: resident
     expected_status: [200]
     response:

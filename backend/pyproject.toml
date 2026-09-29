@@ -21,7 +21,6 @@ dependencies = [
 [project.scripts]
 api = "umniy_dom_max.cmd.api:main"
 bot = "umniy_dom_max.cmd.bot:main"
-clear-db = "umniy_dom_max.cmd.clear_db:main"
 seed = "umniy_dom_max.cmd.seed:main"
 
 [tool.uv]

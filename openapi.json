@@ -11,8 +11,8 @@
         "tags": [
           "Пользователи"
         ],
-        "summary": "Создать демо-пользователя",
-        "description": "Создаёт демо-пользователя со случайными домами, если он ещё не существует. Возвращает данные пользователя.",
+        "summary": "Вход через демо-ЕСИА",
+        "description": "Существующему жителю обновляет аватар и возвращает его. Нового регистрирует со случайными домами, только если пароль совпал с ESIA_PASSWORD, иначе 401.",
         "operationId": "demo_create_user_users_demo_post",
         "requestBody": {
           "content": {
@@ -995,6 +995,28 @@
           "name": {
             "type": "string",
             "title": "Name"
+          },
+          "avatar_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Avatar Url"
+          },
+          "password": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Password"
           }
         },
         "type": "object",
@@ -1116,6 +1138,17 @@
             "title": "Is Read",
             "default": false
           },
+          "avatar_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Avatar Url"
+          },
           "attachments": {
             "items": {
               "$ref": "#/components/schemas/AttachmentOut"
@@ -1179,6 +1212,17 @@
           "name": {
             "type": "string",
             "title": "Name"
+          },
+          "avatar_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Avatar Url"
           },
           "houses": {
             "items": {

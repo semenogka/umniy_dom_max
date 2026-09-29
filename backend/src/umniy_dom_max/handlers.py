@@ -57,7 +57,7 @@ async def demo_create_user(data: DemoUserIn, db: DbSession, settings: SettingsDe
             await db.commit()
         return user
 
-    if data.password != settings.esia_password:
+    if not settings.esia_password or data.password != settings.esia_password:
         raise HTTPException(401, "Неверный пароль")
 
     houses = await repository.get_random_houses(db, 2)

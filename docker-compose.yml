@@ -2,7 +2,6 @@
 x-backend: &backend
   build:
     context: ./backend
-  image: umniy-dom-max-backend
   env_file:
     - backend/.env
   environment:

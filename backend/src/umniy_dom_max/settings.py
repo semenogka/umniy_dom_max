@@ -19,7 +19,7 @@ class Settings(BaseSettings):
     gpt_model: str = "auto:fast"
 
     # Пароль экрана «Вход через ЕСИА»: без него /users/demo не регистрирует нового жителя
-    esia_password: str = "13243546"
+    esia_password: str = ""
 
     max_token: str = ""
     max_api_url: str = "https://platform-api2.max.ru"
