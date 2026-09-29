@@ -13,7 +13,7 @@ from umniy_dom_max.db.models import (
     User,
 )
 from umniy_dom_max.llm import AppealClassification
-
+import asyncio
 # Имя системного пользователя (id=0), от которого пишет бот
 BOT_NAME = "Домовой"
 
@@ -121,6 +121,7 @@ async def create_appeal(
     db.add(appeal)
     await db.flush()
     await _add_appeal_message(db, appeal.id, author_id, user_name, text, attachments)
+    await asyncio.sleep(0.1)
     await _add_appeal_message(db, appeal.id, 0, BOT_NAME, bot_text)
     await db.commit()
     return await get_appeal_detailed(db, appeal.id)
