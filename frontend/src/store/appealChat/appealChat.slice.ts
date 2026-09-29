@@ -6,6 +6,7 @@ import {
 } from "@/api/appeals";
 import { getMaxUserId } from "@/max/webApp";
 import { upsertServerMessage, withDelivery } from "@/store/chatMessage";
+import { hideLoader, showLoader } from "@/store/ui/ui.slice";
 import type { HouseMessage } from "@/store/houses/houses.types";
 
 import type { AppealChatState } from "./appealChat.types";
@@ -24,7 +25,9 @@ const initialState: AppealChatState = {
  */
 export const fetchAppealMessages = createAsyncThunk(
 	"appealChat/fetchAppealMessages",
-	async (appealId: number, { rejectWithValue }) => {
+	async (appealId: number, { dispatch, rejectWithValue }) => {
+		dispatch(showLoader());
+
 		try {
 			const appeal = await fetchAppealMessagesRequest(appealId);
 			return {
@@ -34,6 +37,8 @@ export const fetchAppealMessages = createAsyncThunk(
 		} catch (error) {
 			const message = error instanceof Error ? error.message : "Не удалось загрузить сообщения";
 			return rejectWithValue(message);
+		} finally {
+			dispatch(hideLoader());
 		}
 	},
 );
