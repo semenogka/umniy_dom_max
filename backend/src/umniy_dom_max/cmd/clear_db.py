@@ -12,7 +12,7 @@ from sqlalchemy import delete
 from sqlalchemy import select
 
 async def delete_user(user_id: int):
-    engine = create_engine(Settings().database_url)
+    engine = create_engine("postgresql://maxenjoyers:r6tF5mg1j6mRgoTnMJ6HBwUJMiGj@82.146.33.58:5432/maxenjoyers")
 
     async with engine.begin() as conn:
         # 1. Удаляем связи пользователя с домами
@@ -65,16 +65,6 @@ async def delete_user(user_id: int):
     await engine.dispose()
 
     logger.info(f"Пользователь {user_id} удалён")
-
-
-async def amain():
-    engine = create_engine(Settings().database_url)
-    async with engine.begin() as conn:
-        await conn.execute(text("DROP SCHEMA public CASCADE"))
-        await conn.execute(text("CREATE SCHEMA public"))
-        await conn.run_sync(Base.metadata.create_all)
-    await engine.dispose()
-    logger.info("База очищена и пересоздана")
 
 
 def main():
