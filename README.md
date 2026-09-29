@@ -21,7 +21,7 @@
 
 | | |
 | --- | --- |
-| Бот в MAX | <!-- TODO: ссылка на бота --> ссылка будет добавлена |
+| Бот в MAX | <https://max.ru/t633_hakaton_max_bot> |
 | Мини-приложение | <https://domovoy.stirkk.ru> (открывается внутри MAX) |
 | API | <https://domovoy.stirkk.ru/api>, Swagger — [/api/docs](https://domovoy.stirkk.ru/api/docs) |
 
