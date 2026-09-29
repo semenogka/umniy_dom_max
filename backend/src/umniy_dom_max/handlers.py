@@ -160,7 +160,9 @@ async def change_appeal_status(
     answer = ""
     if status != "close" and mail_text.strip():
         answer = f"\n\n<b>Ответ управляющей компании</b>\n{escape(mail_text.strip())}"
-    msg = f"Статус: {escape(old_label)} → <b>{STATUS_LABELS[status]}</b>{answer}"
+    msg = answer
+    if changed:
+        msg = f"Статус: {escape(old_label)} → <b>{STATUS_LABELS[status]}</b>{answer}"
 
     system_msg = await repository.set_appeal_status(
         db,
