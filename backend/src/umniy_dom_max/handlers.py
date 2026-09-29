@@ -159,10 +159,10 @@ async def change_appeal_status(
     old_label = STATUS_LABELS.get(appeal.status, appeal.status)
     answer = ""
     if status != "close" and mail_text.strip():
-        answer = f"\n\n<b>Ответ управляющей компании</b>\n{escape(mail_text.strip())}"
+        answer = f"<b>Ответ управляющей компании</b>\n{escape(mail_text.strip())}"
     msg = answer
     if changed:
-        msg = f"Статус: {escape(old_label)} → <b>{STATUS_LABELS[status]}</b>{answer}"
+        msg = f"Статус: {escape(old_label)} → <b>{STATUS_LABELS[status]}</b>\n\n{answer}"
 
     system_msg = await repository.set_appeal_status(
         db,
