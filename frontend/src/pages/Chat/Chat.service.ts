@@ -91,6 +91,8 @@ function toChatAttachment(url: string, name?: string): ChatAttachment {
  */
 /** Id системного пользователя «Домовой» на бэке */
 const BOT_USER_ID = 0;
+/** Аватар «Домового» — его логотип */
+const BOT_AVATAR_URL = "/favicon.svg";
 
 export function toChatMessage(message: HouseMessage, currentUserId?: number | null): ChatMessage {
 	const isOut = currentUserId != null && message.sender_id === currentUserId;
@@ -106,6 +108,8 @@ export function toChatMessage(message: HouseMessage, currentUserId?: number | nu
 		author: isOut ? undefined : message.sender,
 		text: message.text,
 		html: message.sender_id === BOT_USER_ID,
+		avatarUrl:
+			message.sender_id === BOT_USER_ID ? BOT_AVATAR_URL : (message.avatar_url ?? undefined),
 		time: formatMessageTime(message.created_at),
 		dateLabel: formatMessageDateLabel(message.created_at),
 		delivery: isOut ? (message.is_read ? "read" : (message.delivery ?? "sent")) : undefined,

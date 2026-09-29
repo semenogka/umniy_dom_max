@@ -50,6 +50,8 @@ type SendHouseMessageArg = {
 	senderId: number;
 	/** Имя отправителя для pending-бабла */
 	senderName: string;
+	/** Фото отправителя для оптимистичного сообщения */
+	senderAvatarUrl?: string;
 };
 
 /**
@@ -143,6 +145,7 @@ const houseChatSlice = createSlice({
 					text,
 					senderId,
 					senderName,
+					senderAvatarUrl,
 					attachments = [],
 					attachmentMeta,
 				} = action.meta.arg;
@@ -152,6 +155,7 @@ const houseChatSlice = createSlice({
 					clientId,
 					sender_id: senderId,
 					sender: senderName,
+					avatar_url: senderAvatarUrl,
 					text,
 					created_at: new Date().toISOString(),
 					is_read: false,

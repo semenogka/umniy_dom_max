@@ -23,6 +23,15 @@ main_attachment = [
     }
 ]
 
+START_TEXT = (
+    "<b>Домовой</b> — помощник жителя по всем вопросам дома.\n\n"
+    "Опишите проблему своими словами: протечка, не работает лифт, мусор во дворе. "
+    "Домовой сам определит, кто отвечает, отправит обращение в управляющую компанию "
+    "и сообщит здесь, когда статус изменится.\n\n"
+    "Ещё в приложении есть общий чат жителей вашего дома.\n\n"
+    "Откройте мини-приложение и войдите через Госуслуги, чтобы начать."
+)
+
 
 def main():
     if sys.stdout.encoding != "utf-8":
@@ -44,15 +53,6 @@ def main():
     runner = asyncio.Runner()
     sessionmaker = create_sessionmaker(create_engine(settings.database_url))
 
-    async def register_user(user_id, name, chat_id):
-        async with sessionmaker() as db:
-            if await repository.get_user(db, user_id):
-                return
-            houses = await repository.get_random_houses(db, 2)
-            if not houses:
-                raise RuntimeError("В БД нет домов — засейте houses")
-            await repository.create_user(db, user_id, name, chat_id, houses)
-
     async def user_appeals(user_id):
         async with sessionmaker() as db:
             return await repository.list_user_appeals(db, user_id)
@@ -61,7 +61,21 @@ def main():
     session.verify = False
     session.headers.update({"Authorization": settings.max_token})
 
-    logger.info("MAX /me: {}", json.dumps(session.get(f"{api}/me").json(), ensure_ascii=False))
+    me = session.get(f"{api}/me").json()
+    logger.info("MAX /me: {}", json.dumps(me, ensure_ascii=False))
+
+    # Регистрация только в мини-приложении (экран ЕСИА), бот лишь зовёт туда
+    start_attachment = [
+        {
+            "type": "inline_keyboard",
+            "payload": {
+                "buttons": [
+                    [{"type": "open_app", "text": "Открыть Домового", "contact_id": me["user_id"]}],
+                    *main_attachment[0]["payload"]["buttons"],
+                ]
+            },
+        }
+    ]
 
     def send_msg(chat_id, text, attachment=None):
         body = {"text": text, "format": "html"}
@@ -85,30 +99,11 @@ def main():
             update_type = update.get("update_type")
 
             if update_type == "bot_started":
-                user = update.get("user") or {}
-                user_id = user.get("user_id")
-                name = user.get("first_name")
-                chat_id = (
-                    chat_id
-                    or update.get("chat_id")
-                    or user.get("chat_id")
-                )
-
-                if not chat_id or not user_id or not name:
-                    logger.warning(f"bot_started: не хватает данных — {update}")
+                chat_id = chat_id or update.get("chat_id") or (update.get("user") or {}).get("chat_id")
+                if not chat_id:
+                    logger.warning(f"bot_started: нет chat_id — {update}")
                     continue
-
-                try:
-                    runner.run(register_user(user_id, name, chat_id))
-                except Exception as e:
-                    logger.error(f"Ошибка регистрации пользователя {user_id}: {e}")
-                    send_msg(chat_id, "Не удалось зарегистрироваться, попробуйте позже.")
-                    continue
-                send_msg(
-                    chat_id,
-                    "Вы успешно зарегистрировались в Домовом! Перейдите в мини-приложение, чтобы оставить обращение.",
-                    attachment=main_attachment,
-                )
+                send_msg(chat_id, START_TEXT, attachment=start_attachment)
 
             elif update_type == "message_callback":
                 callback = update.get("callback") or {}

@@ -4,6 +4,16 @@
  */
 export const API_BASE_URL = (import.meta.env.VITE_API_URL ?? "").replace(/\/$/, "");
 
+/** Ошибка ответа API с HTTP-статусом */
+export class ApiError extends Error {
+	readonly status: number;
+
+	constructor(message: string, status: number) {
+		super(message);
+		this.status = status;
+	}
+}
+
 /**
  * Разбор ошибки ответа API
  * @param response - ответ fetch
@@ -81,7 +91,7 @@ export async function apiPost<T>(path: string, body: unknown): Promise<T> {
 		body: JSON.stringify(body),
 	});
 
-	if (!response.ok) throw new Error(await readErrorDetail(response));
+	if (!response.ok) throw new ApiError(await readErrorDetail(response), response.status);
 
 	return response.json() as Promise<T>;
 }

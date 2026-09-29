@@ -25,6 +25,7 @@ import {
 import type { ChatHeaderProps, ChatMessageInputProps } from "./Chat.types";
 import { AppealDetailsSidebar } from "./components/AppealDetailsSidebar";
 import { ChatSidebar } from "./components/ChatSidebar";
+import { EsiaAuth } from "./components/EsiaAuth";
 import { HouseInfoSidebar } from "./components/HouseInfoSidebar";
 import { HousePickerSidebar } from "./components/HousePickerSidebar";
 import { MessageList } from "./components/MessageList";
@@ -76,6 +77,7 @@ export function ChatPage() {
 	const appealMessages = useAppSelector((state) => state.appealChat.messages);
 	const appealChatAppealId = useAppSelector((state) => state.appealChat.appealId);
 	const currentUser = useAppSelector((state) => state.user.current);
+	const authRequired = useAppSelector((state) => state.user.authRequired);
 
 	const [sidebarOpen, setSidebarOpen] = useState(false);
 	const [newAppealOpen, setNewAppealOpen] = useState(false);
@@ -134,11 +136,11 @@ export function ChatPage() {
 		dispatch(initCurrentUser());
 
 		/**
-		 * Сначала /users/demo, потом дома
+		 * Сначала /users/demo (новый житель → экран ЕСИА), потом дома
 		 * @returns {Promise<void>}
 		 */
 		const bootstrap = async (): Promise<void> => {
-			const demo = await dispatch(ensureDemoUser());
+			const demo = await dispatch(ensureDemoUser(undefined));
 			if (ensureDemoUser.fulfilled.match(demo)) {
 				dispatch(fetchUserHouses());
 			}
@@ -263,6 +265,7 @@ export function ChatPage() {
 						clientId: crypto.randomUUID(),
 						senderId: currentUser.id,
 						senderName: currentUser.name,
+						senderAvatarUrl: currentUser.avatarUrl,
 					}),
 				);
 				return;
@@ -278,6 +281,7 @@ export function ChatPage() {
 						clientId: crypto.randomUUID(),
 						senderId: currentUser.id,
 						senderName: currentUser.name,
+						senderAvatarUrl: currentUser.avatarUrl,
 					}),
 				);
 			}
@@ -453,6 +457,8 @@ export function ChatPage() {
 	const handleRequestAct = useCallback(() => {
 		setActRequestedByChat((prev) => ({ ...prev, [chat.id]: true }));
 	}, [chat.id]);
+
+	if (authRequired) return <EsiaAuth />;
 
 	return (
 		<div className={getChatPageClassName(styles)}>

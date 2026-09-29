@@ -1,0 +1,134 @@
+/* Сторонний стиль Госуслуг: Lato и токены esia/* */
+.root {
+	height: 100%;
+	height: 100dvh;
+	padding: var(--space-10) 0 0;
+	overflow-y: auto;
+	background: var(--esia-backdrop);
+	font-family: var(--font-esia);
+	font-size: var(--text-esia-body-size);
+	line-height: var(--text-esia-body-line);
+	color: var(--fg);
+}
+
+.card {
+	min-height: 100%;
+	margin: 0 var(--space-10);
+	padding: 48px 32px 40px;
+	border-radius: var(--radius-md) var(--radius-md) 0 0;
+	background: var(--surface);
+}
+
+.brands {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: 18px;
+	min-height: 112px;
+	margin-bottom: 36px;
+}
+
+.esiaLogo {
+	display: block;
+	width: 86px;
+	height: auto;
+}
+
+.domovoy {
+	display: grid;
+	justify-items: center;
+	gap: 6px;
+
+	img {
+		display: block;
+		width: 72px;
+		height: 72px;
+	}
+
+	strong {
+		font-family: var(--font-body);
+		font-size: 17px;
+		font-weight: 800;
+		line-height: 1;
+		letter-spacing: -0.3px;
+	}
+}
+
+.account {
+	margin-bottom: 28px;
+	text-align: center;
+}
+
+.avatar {
+	display: block;
+	width: 88px;
+	height: 88px;
+	margin: 0 auto 18px;
+	border-radius: var(--radius-full);
+	object-fit: cover;
+	background: var(--bg-muted);
+}
+
+.name {
+	font-size: var(--text-esia-phone-size);
+	font-weight: var(--text-esia-phone-weight);
+	line-height: var(--text-esia-phone-line);
+}
+
+.field {
+	display: grid;
+	gap: var(--space-8);
+	margin-top: 8px;
+
+	input {
+		width: 100%;
+		min-height: 64px;
+		padding: 0 16px;
+		border: 1px solid transparent;
+		border-radius: var(--radius-xs);
+		background: var(--bg-subtle);
+		color: var(--fg);
+		font-size: var(--text-esia-input-size);
+		line-height: var(--text-esia-input-line);
+
+		&:focus {
+			border-color: var(--esia-primary);
+			outline: 3px solid var(--esia-backdrop);
+			background: var(--surface);
+		}
+	}
+}
+
+.error {
+	min-height: 20px;
+	margin-top: 5px;
+	color: var(--danger-fg);
+	font-size: 14px;
+}
+
+.submit {
+	width: 100%;
+	min-height: 64px;
+	margin-top: 32px;
+	border: 0;
+	border-radius: var(--radius-sm);
+	background: var(--esia-primary);
+	color: var(--on-accent);
+	cursor: pointer;
+	font-size: var(--text-esia-button-size);
+	font-weight: var(--text-esia-button-weight);
+	line-height: var(--text-esia-button-line);
+	transition:
+		background 0.16s ease,
+		transform 0.16s ease;
+
+	&:active {
+		background: var(--esia-primary-pressed);
+		transform: scale(0.98);
+	}
+
+	&:disabled {
+		opacity: 0.7;
+		cursor: default;
+	}
+}

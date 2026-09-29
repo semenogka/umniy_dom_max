@@ -18,6 +18,9 @@ class Settings(BaseSettings):
     gpt_base_url: str = "https://freellmapi.stirk1337.ru/v1"
     gpt_model: str = "auto:fast"
 
+    # Пароль экрана «Вход через ЕСИА»: без него /users/demo не регистрирует нового жителя
+    esia_password: str = "13243546"
+
     max_token: str = ""
     max_api_url: str = "https://platform-api2.max.ru"
 

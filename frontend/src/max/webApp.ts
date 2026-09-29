@@ -47,3 +47,10 @@ export function getMaxUserName(): string | null {
 
 	return null;
 }
+
+/**
+ * URL фото профиля MAX
+ */
+export function getMaxUserPhoto(): string | null {
+	return window.WebApp?.initDataUnsafe?.user?.photo_url || null;
+}

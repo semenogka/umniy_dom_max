@@ -60,7 +60,7 @@ const SenderGroup = memo(function SenderGroup({
 	onOpenAttachment,
 	onBubbleRef,
 }: SenderGroupProps) {
-	const showAvatar = !group.isOut && Boolean(group.avatarUrl);
+	const showAvatar = Boolean(group.avatarUrl);
 
 	const bubbles = (
 		<div className={styles.bubbles}>
@@ -126,7 +126,10 @@ const SenderGroup = memo(function SenderGroup({
 	return (
 		<div className={getMessageListSenderGroupClassName(styles, group.isOut)}>
 			{group.isOut ? (
-				bubbles
+				<>
+					{bubbles}
+					{avatar}
+				</>
 			) : (
 				<>
 					{avatar}

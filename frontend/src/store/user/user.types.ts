@@ -4,4 +4,6 @@ export type User = {
 	id: number;
 	/** Имя */
 	name: string;
+	/** Фото профиля */
+	avatarUrl?: string;
 };

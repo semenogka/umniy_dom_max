@@ -26,6 +26,11 @@ class AppealMessage(Base):
     is_read = Column(Boolean, default=False)
     appeal = relationship("Appeal", back_populates="messages")
     attachments = relationship("MessageAttachment", cascade="all, delete-orphan")
+    user = relationship("User", lazy="joined")
+
+    @property
+    def avatar_url(self) -> str | None:
+        return self.user.avatar_url
 
 user_houses = Table(
     "user_houses",
@@ -46,6 +51,11 @@ class HouseMessage(Base):
     is_read = Column(Boolean, default=False)
     house = relationship("House", back_populates="messages")
     attachments = relationship("MessageAttachment", cascade="all, delete-orphan")
+    user = relationship("User", lazy="joined")
+
+    @property
+    def avatar_url(self) -> str | None:
+        return self.user.avatar_url
 
 
 class House(Base):
@@ -81,6 +91,8 @@ class User(Base):
     id = Column(Integer, primary_key=True)
     max_chat_id = Column(Integer, nullable=True)
     name = Column(String)
+    # Фото профиля MAX (photo_url из WebApp)
+    avatar_url = Column(String, nullable=True)
     houses = relationship("House", secondary=user_houses, back_populates="users")
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 

@@ -46,19 +46,26 @@ APPEAL_MAIL_HEADERS = {"X-Domovoy": "appeal"}
 
 
 @router.post("/users/demo", response_model=UserOut, tags=["Пользователи"],
-             summary="Создать демо-пользователя",
-             description="Создаёт демо-пользователя со случайными домами, если он ещё не существует. Возвращает данные пользователя.")
-async def demo_create_user(data: DemoUserIn, db: DbSession):
+             summary="Вход через демо-ЕСИА",
+             description="Существующему жителю обновляет аватар и возвращает его. "
+                         "Нового регистрирует со случайными домами, только если пароль совпал с ESIA_PASSWORD, иначе 401.")
+async def demo_create_user(data: DemoUserIn, db: DbSession, settings: SettingsDep):
     user = await repository.get_user_full(db, data.user_id)
     if user:
+        if data.avatar_url and data.avatar_url != user.avatar_url:
+            user.avatar_url = data.avatar_url
+            await db.commit()
         return user
+
+    if data.password != settings.esia_password:
+        raise HTTPException(401, "Неверный пароль")
 
     houses = await repository.get_random_houses(db, 2)
     if not houses:
         raise HTTPException(500, "No houses in DB - засейте houses")
 
     return await repository.create_user(
-        db, data.user_id, data.name, data.chat_id, houses
+        db, data.user_id, data.name, data.chat_id, houses, data.avatar_url
     )
 
 

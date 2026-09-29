@@ -37,6 +37,9 @@ class DemoUserIn(BaseModel):
     user_id: int
     chat_id: int
     name: str
+    avatar_url: str | None = None
+    # Нужен только для регистрации нового жителя
+    password: str | None = None
 
 class MessageOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
@@ -47,6 +50,7 @@ class MessageOut(BaseModel):
     text: str
     created_at: datetime
     is_read: bool = False
+    avatar_url: str | None = None
     attachments: list[AttachmentOut] = []
 
 class MessageIn(BaseModel):
@@ -89,5 +93,6 @@ class UserOut(BaseModel):
     id: int
     chat_id: int | None = Field(default=None, alias="max_chat_id")
     name: str
+    avatar_url: str | None = None
     houses: list[HouseOut] = []
     appeals: list[AppealOut] = []

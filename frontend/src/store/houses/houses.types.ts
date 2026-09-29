@@ -29,6 +29,8 @@ export type HouseMessage = {
 	sender_id: number;
 	/** Имя отправителя */
 	sender: string;
+	/** Фото отправителя */
+	avatar_url?: string | null;
 	/** Текст */
 	text: string;
 	/** Дата создания */

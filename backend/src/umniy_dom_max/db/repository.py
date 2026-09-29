@@ -43,9 +43,14 @@ async def get_user_full(db: AsyncSession, user_id: int) -> User | None:
 
 
 async def create_user(
-    db: AsyncSession, user_id: int, name: str, chat_id: int, houses: list[House]
+    db: AsyncSession,
+    user_id: int,
+    name: str,
+    chat_id: int,
+    houses: list[House],
+    avatar_url: str | None = None,
 ) -> User:
-    db.add(User(id=user_id, name=name, max_chat_id=chat_id, houses=houses))
+    db.add(User(id=user_id, name=name, max_chat_id=chat_id, houses=houses, avatar_url=avatar_url))
     await db.commit()
     return await get_user_full(db, user_id)
 
