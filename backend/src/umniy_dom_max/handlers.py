@@ -187,7 +187,7 @@ async def change_appeal_status(
             json={
                 "text": (
                     f"<b>{heading}</b>\n"
-                    f"Статус: <b>{STATUS_LABELS[status]}</b>{answer}"
+                    f"Статус: <b>{STATUS_LABELS[status]}</b>\n\n{answer}"
                 ),
                 "format": "html",
             },
