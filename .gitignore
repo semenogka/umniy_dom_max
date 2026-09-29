@@ -11,3 +11,6 @@ frontend/node_modules/
 frontend/dist/
 frontend/*.local
 *.egg-info/
+
+# Слайд с рабочими токенами
+presentation/01-tech.html
