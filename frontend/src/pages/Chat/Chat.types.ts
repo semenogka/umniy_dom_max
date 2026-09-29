@@ -63,8 +63,6 @@ export type Chat = {
 	number?: string;
 	/** Оператор заявки */
 	operator?: ChatAppealOperator;
-	/** Акт уже запрошен */
-	actRequested?: boolean;
 	/** Сообщения */
 	messages: ChatMessage[];
 };

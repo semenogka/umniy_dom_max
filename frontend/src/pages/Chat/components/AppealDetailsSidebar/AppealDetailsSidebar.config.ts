@@ -4,8 +4,11 @@ export const APPEAL_DETAILS_TITLE = "Сведения о заявке";
 /** Подпись блока оператора */
 export const APPEAL_DETAILS_OPERATOR_LABEL = "Заявку ведёт";
 
-/** Кнопка запроса акта */
-export const APPEAL_DETAILS_ACT_LABEL = "Собрать акт";
+/** Кнопка закрытия заявки */
+export const APPEAL_DETAILS_CLOSE_LABEL = "Закрыть заявку";
 
-/** Кнопка после запроса акта */
-export const APPEAL_DETAILS_ACT_REQUESTED_LABEL = "Акт запрошен";
+/** Кнопка во время закрытия заявки */
+export const APPEAL_DETAILS_CLOSING_LABEL = "Закрываем…";
+
+/** Текст письма при закрытии заявки */
+export const APPEAL_DETAILS_CLOSE_MAIL_TEXT = "Ваша заявка закрыта";

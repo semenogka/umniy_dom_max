@@ -5,8 +5,8 @@ import { Icon } from "@/components/Icon";
 import { Status } from "@/components/Status";
 import { STATUS_ICON_SIZE, STATUS_META } from "@/components/Status/Status.config";
 import {
-	APPEAL_DETAILS_ACT_LABEL,
-	APPEAL_DETAILS_ACT_REQUESTED_LABEL,
+	APPEAL_DETAILS_CLOSE_LABEL,
+	APPEAL_DETAILS_CLOSING_LABEL,
 	APPEAL_DETAILS_OPERATOR_LABEL,
 	APPEAL_DETAILS_TITLE,
 } from "./AppealDetailsSidebar.config";
@@ -19,11 +19,11 @@ import type { AppealDetailsSidebarProps } from "./AppealDetailsSidebar.types";
 
 /** Лист сведений о заявке */
 export function AppealDetailsSidebar(props: AppealDetailsSidebarProps) {
-	const { chat, actRequested = false, onRequestAct, onClose, className } = props;
+	const { chat, closing = false, onCloseAppeal, onClose, className } = props;
 	const titleId = useId();
 	const status = chat.status ?? "in_progress";
 	const statusMeta = STATUS_META[status];
-	const showActAction = status === "in_progress";
+	const showCloseAction = status !== "close";
 
 	return (
 		<div className={getAppealDetailsSidebarClassName(styles, className)} aria-labelledby={titleId}>
@@ -73,16 +73,16 @@ export function AppealDetailsSidebar(props: AppealDetailsSidebarProps) {
 				)}
 			</article>
 
-			{showActAction && (
+			{showCloseAction && (
 				<div className={styles.actions}>
 					<Button
-						variant="outline"
+						variant="accent"
 						type="button"
-						className={styles.actButton}
-						disabled={actRequested}
-						onClick={onRequestAct}
+						className={styles.closeButton}
+						disabled={closing}
+						onClick={onCloseAppeal}
 					>
-						{actRequested ? APPEAL_DETAILS_ACT_REQUESTED_LABEL : APPEAL_DETAILS_ACT_LABEL}
+						{closing ? APPEAL_DETAILS_CLOSING_LABEL : APPEAL_DETAILS_CLOSE_LABEL}
 					</Button>
 				</div>
 			)}

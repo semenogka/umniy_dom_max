@@ -4,10 +4,10 @@ import type { Chat } from "../../Chat.types";
 export type AppealDetailsSidebarProps = {
 	/** Данные заявки */
 	chat: Chat;
-	/** Акт уже запрошен */
-	actRequested?: boolean;
-	/** Запрос акта */
-	onRequestAct?: () => void;
+	/** Идёт закрытие заявки */
+	closing?: boolean;
+	/** Закрытие заявки (статус) */
+	onCloseAppeal?: () => void;
 	/** Закрытие листа */
 	onClose?: () => void;
 	/** Дополнительный класс */

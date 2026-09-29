@@ -3,11 +3,13 @@ import { createAsyncThunk, createSlice, type PayloadAction } from "@reduxjs/tool
 import {
 	createAppeal as createAppealRequest,
 	fetchHouseAppeals as fetchHouseAppealsRequest,
+	updateAppealStatus as updateAppealStatusRequest,
 } from "@/api/appeals";
 import { getMaxUserId } from "@/max/webApp";
 import { hideLoader, showLoader } from "@/store/ui/ui.slice";
 
 import type { Appeal, AppealsState, CreateAppealArg } from "./appeals.types";
+import { APPEAL_DETAILS_CLOSE_MAIL_TEXT } from "@/pages/Chat/components/AppealDetailsSidebar/AppealDetailsSidebar.config";
 
 const initialState: AppealsState = {
 	items: [],
@@ -64,6 +66,22 @@ export const createAppeal = createAsyncThunk(
 			return rejectWithValue(message);
 		} finally {
 			dispatch(hideLoader());
+		}
+	},
+);
+
+/**
+ * Закрытие обращения
+ * @param appealId - id обращения
+ */
+export const closeAppeal = createAsyncThunk(
+	"appeals/closeAppeal",
+	async (appealId: number, { rejectWithValue }) => {
+		try {
+			return await updateAppealStatusRequest(appealId, "close", APPEAL_DETAILS_CLOSE_MAIL_TEXT);
+		} catch (error) {
+			const message = error instanceof Error ? error.message : "Не удалось закрыть обращение";
+			return rejectWithValue(message);
 		}
 	},
 );
@@ -143,6 +161,16 @@ const appealsSlice = createSlice({
 			.addCase(createAppeal.rejected, (state, action) => {
 				state.error =
 					typeof action.payload === "string" ? action.payload : "Не удалось создать обращение";
+			})
+			/** Обращение закрыто — обновляем в списке */
+			.addCase(closeAppeal.fulfilled, (state, action) => {
+				upsertAppeal(state.items, action.payload);
+				state.error = null;
+			})
+			/** Ошибка закрытия обращения */
+			.addCase(closeAppeal.rejected, (state, action) => {
+				state.error =
+					typeof action.payload === "string" ? action.payload : "Не удалось закрыть обращение";
 			});
 	},
 });

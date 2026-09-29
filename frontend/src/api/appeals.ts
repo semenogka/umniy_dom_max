@@ -1,7 +1,8 @@
+import type { StatusValue } from "@/components/Status/Status.types";
 import type { Appeal } from "@/store/appeals/appeals.types";
 import type { HouseMessage } from "@/store/houses/houses.types";
 
-import { apiGet, apiPost } from "./client";
+import { apiGet, apiPatch, apiPost } from "./client";
 
 /**
  * Обращения дома
@@ -56,5 +57,22 @@ export function sendAppealMessage(
 		text: payload.text,
 		user_id: payload.user_id,
 		attachments: payload.attachments ?? [],
+	});
+}
+
+/**
+ * Обновление статуса обращения
+ * @param appealId - id обращения
+ * @param status - новый статус
+ * @param mailText - текст ответа УК (опционально)
+ */
+export function updateAppealStatus(
+	appealId: number,
+	status: StatusValue,
+	mailText = "",
+): Promise<Appeal> {
+	return apiPatch<Appeal>(`/appeals/${appealId}/update`, {
+		status,
+		mail_text: mailText,
 	});
 }
