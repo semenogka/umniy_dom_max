@@ -70,7 +70,12 @@ def main():
             "type": "inline_keyboard",
             "payload": {
                 "buttons": [
-                    [{"type": "open_app", "text": "Открыть Домового", "contact_id": me["user_id"]}],
+                    [{
+                        "type": "open_app",
+                        "text": "Открыть Домового",
+                        "web_app": me["username"],
+                        "contact_id": me["user_id"],
+                    }],
                     *main_attachment[0]["payload"]["buttons"],
                 ]
             },
