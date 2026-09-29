@@ -166,7 +166,7 @@ async def change_appeal_status(
         db,
         appeal,
         status,
-        msg if changed else None,
+        msg,
     )
     # if not changed:
     #     return appeal
@@ -199,7 +199,6 @@ async def change_appeal_status(
         "type": "appeal_updated",
         "data": AppealOut.model_validate(appeal).model_dump(mode="json"),
     }
-    await repository._add_appeal_message(db, appeal.id, 0, "Домовой", appeal_payload)
     await ws.broadcast(appeal_room(appeal.id), appeal_payload)
     await ws.broadcast(house_room(appeal.house_id), appeal_payload)
 
