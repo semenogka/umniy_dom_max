@@ -128,7 +128,7 @@ class Appeal(Base):
     messages = relationship(
         "AppealMessage",
         cascade="all, delete-orphan",
-        order_by="AppealMessage.created_at",
+        order_by="AppealMessage.id",
     )
 
     author = relationship("User", back_populates="appeals")
