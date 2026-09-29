@@ -168,8 +168,8 @@ async def change_appeal_status(
         status,
         msg if changed else None,
     )
-    if not changed:
-        return appeal
+    # if not changed:
+    #     return appeal
 
     # уведа в чат
     name = appeal.title or appeal.problem_type
